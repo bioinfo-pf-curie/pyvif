@@ -55,11 +55,10 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/ddesvillechabrol/pyvif',
+    url='https://bitbucket.org/ddesvillechabrol/pyvif',
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'pyvif=pyvif.cli:main',
         ],
     },
 )
