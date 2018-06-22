@@ -17,7 +17,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', ]
+requirements = ['Click>=6.0', 'jinja2', 'matplotlib', 'numpy', 'pandas',
+                'pysam', 'pytest', ]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -35,7 +36,7 @@ setup(
                 " virus in human genome using capture pacbio.",
     long_description=readme + '\n\n' + history,
     license="BSD license",
-    plateforms=['Linux', 'Unix', 'MacOsX']
+    plateforms=['Linux', 'Unix', 'MacOsX'],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
