@@ -1,0 +1,7 @@
+click
+jinja2
+matplotlib
+numpy
+pandas
+pysam
+pytest
