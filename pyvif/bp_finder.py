@@ -14,7 +14,7 @@ from . import logger
 from .exception import BadInputException
 from .paftools import PAF
 
-TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
+_TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
 
 
 class BreakpointFinder(object):
@@ -33,6 +33,8 @@ class BreakpointFinder(object):
         """
         self.raw = raw
         self.paf, self.interest_contigs = self._init_paf(human, interest)
+        self.palindromics = []
+        self.bps = self.find_breakpoints()
 
     def _init_paf(self, human, interest):
         """ Initiate intersect paf with alignment on human and on target.
@@ -76,6 +78,7 @@ class BreakpointFinder(object):
         interest.
         """
         logger.info("Breakpoint research is running...")
+        self.palindromics = []
         breakpoints = list()
         with FastqReader(self.raw) as filin:
             for record in filin:
@@ -134,6 +137,10 @@ class BreakpointFinder(object):
                     pass
             (prev_chr, prev_coord, prev_strand, prev_mapq) = (
                 cur_chr, cur_coord, cur_strand, cur_mapq)
+
+        # Check if the read is palindromics
+        if _read_is_palindromic(bp_list):
+            self.palindromics.append(name)
         return bp_list
 
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
@@ -164,7 +171,7 @@ class BreakpointFinder(object):
         bp_pos = interest_coord[2 + i]
         bp_sequence = read_seq[bp_pos - 15:bp_pos + 15]
         if interest_strand == '-':
-            bp_sequence = bp_sequence.translate(TRANSTAB)[::-1]
+            bp_sequence = bp_sequence.translate(_TRANSTAB)[::-1]
 
         return OrderedDict([
             ("chromosome", human_chr),
@@ -176,6 +183,55 @@ class BreakpointFinder(object):
             ("read", read_name),
             ("bp_sequence", bp_sequence)
         ])
+
+    def clustering_breakpoints(self, threshold=25):
+        """ 
+        """
+        clustering = self.bps.sort_values('bpstart_human')\
+                             .groupby("chromosome")['bpstart_human']\
+                             .diff().gt(threshold).cumsum()
+
+
+def _read_is_palindromic(bp_list):
+    """ Check if a read with multiple breakpoint is palindromics.
+    """
+    if len(bp_list) < 2:
+        return False
+    bp_iter = iter(bp_list)
+    prev_bp = next(bp_iter)
+    for bp in bp_iter:
+        if _bp_are_equal(prev_bp, bp):
+            return True
+        prev_bp = bp
+    return False
+
+
+def _bp_are_equal(bp1, bp2, margin=100):
+    iter_dict = zip(bp1.items(), bp2.items())
+    for (k1, v1), (k2, v2) in iter_dict:
+        # ignore sequence
+        if k1 == "bp_sequence":
+            continue
+        # stop parameter need special comparison
+        if k1.startswith("end"):
+            start = "bpstart_" + k1.split("_")[-1]
+            try:
+                cond = ((bp1[start] - v1) * (bp2[start] - v2)) > 0
+            except TypeError:
+                cond = v1 == v2
+            if cond:
+                continue
+            else:
+                return False
+
+        # create condition if value are string or int
+        try:
+            cond = abs(v1 - v2) < margin
+        except TypeError:
+            cond = v1 == v2
+        if cond is False:
+            return False
+    return True
 
 
 if __name__ == "__main__":
