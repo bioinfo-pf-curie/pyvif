@@ -1,0 +1,20 @@
+{# The side navigation bar of HTML file.
+#}
+<div id="sidenav-wrapper">
+  <nav id="sidenav">
+    <div id="sidenav-header">
+      <h2><a href="#report-title">PbCapture</a></h2>
+    </div>
+    <ul class="list-unstyled components">
+      <li><a href="#pb-qc">Pacbio QC</a></li>
+      <li><a href="#capture-qc">Capture QC</a></li>
+      <li><a href="#junction">Junctions</a></li>
+    </ul>
+  </nav>
+  <div id="sidenav-logo">
+    <img src="{{include_file('img/logo-institut-curie.png', b64=True)}}" width=124px height=124px>
+  </div>
+  <div id="sidenav-collapse">
+    <span class="glyphicon glyphicon-triangle-left" aria-hidden="true"></span>
+  </div>
+</div>
