@@ -140,7 +140,8 @@ class BreakpointFinder(object):
 
         # Check if the read is palindromics
         if _read_is_palindromic(bp_list):
-            self.palindromics.append(name)
+            self.palindromics.append(bp_list)
+            return []
         return bp_list
 
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
@@ -184,12 +185,73 @@ class BreakpointFinder(object):
             ("bp_sequence", bp_sequence)
         ])
 
-    def clustering_breakpoints(self, threshold=25):
-        """ 
+    def clustering_breakpoints(self, human_thd=25, interest_thd=25):
+        """ Generate a clustering with bpstart_human and with bpstart_interest.
+
+        :params int threshold: maximal distance between two breakpoint start.
+
+        Add 'human_clust' and 'interest_clust' in dataframe.
         """
-        clustering = self.bps.sort_values('bpstart_human')\
-                             .groupby("chromosome")['bpstart_human']\
-                             .diff().gt(threshold).cumsum()
+        # clustering with human breakpoint start and chromosome
+        known_bp = self.bps.loc[self.bps['chromosome'] != 'Unknown']
+        clustering = known_bp.sort_values('bpstart_human')\
+                             .groupby('chromosome')['bpstart_human']\
+                             .diff().gt(human_thd).cumsum()
+        self.bps.loc[clustering.index, 'human_clust'] = clustering
+        grouped = self.bps.dropna().groupby(['chromosome', 'human_clust'])
+        logger.info("They are {} different breakpoints in human genome."
+                    .format(len(grouped.groups)))
+        # clustering with interest breakpoint start
+        clustering = self.bps.sort_values('bpstart_interest')['bpstart_interest']\
+                             .diff().gt(interest_thd).cumsum()
+        self.bps.loc[clustering.index, 'interest_clust'] = clustering
+        logger.info("They are {} different breakpoints in interest genome."
+                    .format(len(self.bps['interest_clust'].unique())))
+
+    def summarize_human_clustering(self, top_cluster=10):
+        """ Return a dataframe that summarizes bigger clusters.
+
+        :params int top_cluster: number of bigger cluster to summerize.
+        """
+        # get groups
+        try:
+            grouped = self.bps.dropna().groupby(['chromosome', 'human_clust'])
+        except KeyError:
+            raise KeyError("Run the method `clustering_breakpoints` before"
+                           " this method.")
+        sorted_group = sorted(grouped.groups.items(), key=lambda x: len(x[1]),
+                              reverse=True)
+        cluster_df = [
+            self._summarize_sub_df(cluster[1])
+            for cluster in sorted_group[:top_cluster]
+        ]
+        return pd.DataFrame(
+            cluster_df, 
+            columns=['chromosome', 'median_bpstart_human', 'max_end_human',
+                     'median_bpstart_interest', 'max_end_interest',
+                     'number_of_read']
+        )
+
+    def _summarize_sub_df(self, index):
+        """ Return a summary of your cluster.
+        """
+        subdf = self.bps.loc[index]
+        return [
+            subdf['chromosome'].max(),
+            subdf['bpstart_human'].median(),
+            _get_max_end(subdf, 'human'),
+            subdf['bpstart_interest'].median(),
+            _get_max_end(subdf, 'interest'),
+            len(index)
+        ]
+
+
+def _get_max_end(subdf, target):
+    start = "bpstart_" + target
+    end = "end_" + target
+    if subdf[start].min() > subdf[end].min():
+        return subdf[end].min()
+    return subdf[end].max()
 
 
 def _read_is_palindromic(bp_list):
@@ -232,12 +294,3 @@ def _bp_are_equal(bp1, bp2, margin=100):
         if cond is False:
             return False
     return True
-
-
-if __name__ == "__main__":
-    bp_finder = BreakpointFinder(
-        "interest_reads.fastq",
-        "human.bam",
-        "interest.bam"
-    )
-    breakpoint_df = bp_finder.find_breakpoints()
