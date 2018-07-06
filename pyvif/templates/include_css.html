@@ -1,6 +1,23 @@
 {# Add embedded css in the HTML file.
 #}
+
 <style type="text/css">
-  {{include_file('css/bootstrap.min.css')}}
-  {{include_file('css/pyvif.css')}}
+  @font-face{
+    font-family:"Font Awesome 5 Free";
+    font-style:normal;
+    font-weight:900;
+    src:url(data:font/eot;base64,{{include_file(template_data('fonts/fa-solid-900.eot'), b64=True)}});
+    src:url(data:font/eot;base64,{{include_file(template_data('fonts/fa-solid-900.eot'), b64=True)}}) format('embedded-opentype'),
+        url(data:x-font-woff/woff2;base64,{{include_file(template_data('fonts/fa-solid-900.woff2'), b64=True)}}) format('woff2'),
+        url(data:x-font-woff/woff;base64,{{include_file(template_data('fonts/fa-solid-900.woff'), b64=True)}}) format('woff'),
+        url(data:font/ttf;base64,{{include_file(template_data('fonts/fa-solid-900.ttf'), b64=True)}}) format('truetype'),
+        url(data:image/svg;base64,{{include_file(template_data('fonts/fa-solid-900.svg'), b64=True)}}) format('svg');
+  }.fa,.fas{font-weight:900}
+</style>
+
+<style type="text/css">
+  {{include_file(template_data('css/bootstrap.min.css'))}}
+  {{include_file(template_data('css/solid.css'))}}
+  {{include_file(template_data('css/fontawesome.css'))}}
+  {{include_file(template_data('css/pyvif.css'))}}
 </style>

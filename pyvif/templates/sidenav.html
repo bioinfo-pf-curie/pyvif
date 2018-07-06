@@ -3,18 +3,17 @@
 <div id="sidenav-wrapper">
   <nav id="sidenav">
     <div id="sidenav-header">
-      <h2><a href="#report-title">PbCapture</a></h2>
+      <h2><a href="#report-title">PyVIF</a></h2>
     </div>
     <ul class="list-unstyled components">
-      <li><a href="#pb-qc">Pacbio QC</a></li>
-      <li><a href="#capture-qc">Capture QC</a></li>
-      <li><a href="#junction">Junctions</a></li>
+      <li><a href="#pb-qc">Quality Control</a></li>
+      <li><a href="#capture-qc">Insertion Detected</a></li>
     </ul>
   </nav>
   <div id="sidenav-logo">
-    <img src="{{include_file('img/logo-institut-curie.png', b64=True)}}" width=124px height=124px>
+    <img width=124px height=124px src="data:image/png;base64,{{include_file(template_data('images/logo-institut-curie.png'), b64=True)}}">
   </div>
   <div id="sidenav-collapse">
-    <span class="glyphicon glyphicon-triangle-left" aria-hidden="true"></span>
+    <span class="fa fa-angle-left"></span>
   </div>
 </div>
