@@ -21,17 +21,15 @@ class BreakpointFinder(object):
     """ Object that detect all breakpoint present in PacBio data.
     It uses a mapping on human and viruses genomes.
     """
-    def __init__(self, raw, human, virus):
+    def __init__(self, human, virus):
         """.. rubric:: constructor
 
-        :param raw: Raw fastq data.
         :param human: PAF* format of mapping on human genome or BAM file.
         :param virus: PAF* format of mapping on virus genomes or BAM file.
 
         *PAF correspond to :class:`pbcapture.bamtools.PAF` object or a PAF
         file created by :meth:`pbcapture.bamtools.PAF.to_csv`.
         """
-        self.raw = raw
         self.paf, self.virus_contigs = self._init_paf(human, virus)
         self.palindromics = []
         self.bps = self.find_breakpoints()
@@ -80,21 +78,19 @@ class BreakpointFinder(object):
         logger.info("Breakpoint research is running...")
         self.palindromics = []
         breakpoints = list()
-        with FastqReader(self.raw) as filin:
-            for record in filin:
-                try:
-                    breakpoints += self._get_read_breakpoints(record.name,
-                                                              record.sequence)
-                except TypeError:
-                    pass
+        for read_name in self.paf.index.unique():
+            try:
+                breakpoints += self._get_read_breakpoints(read_name)
+            except TypeError:
+                pass
         logger.info("{} breakpoints are found.".format(len(breakpoints)))
         return pd.DataFrame(breakpoints)
 
-    def _get_read_breakpoints(self, name, sequence):
+    def _get_read_breakpoints(self, name):
         try:
             read_paf = self.paf.loc[name]
         except KeyError:
-            return
+            return None
         # zip function is faster than itertuples method
         # try if read_paf is a dataframe and not a Series
         # If it is a Serie -> read have only one alignment
@@ -105,7 +101,7 @@ class BreakpointFinder(object):
                 read_paf["mapq"]
             )
         except TypeError:
-            return
+            return None
 
         # init previous variables
         prev_chr = prev_coord = prev_strand = prev_mapq = None
@@ -120,7 +116,7 @@ class BreakpointFinder(object):
                             self._get_breakpoint(
                                 prev_chr, prev_coord, prev_strand,
                                 prev_mapq, cur_chr, cur_coord,
-                                cur_strand, name, sequence
+                                cur_strand, name
                             )
                         )
                     except TypeError:
@@ -130,7 +126,7 @@ class BreakpointFinder(object):
                     bp_list.append(
                         self._get_breakpoint(
                             cur_chr, cur_coord, cur_strand, cur_mapq, prev_chr,
-                            prev_coord, prev_strand, name, sequence
+                            prev_coord, prev_strand, name
                         )
                     )
                 except TypeError:
@@ -145,8 +141,7 @@ class BreakpointFinder(object):
         return bp_list
 
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
-                        virus_chr, virus_coord, virus_strand,
-                        read_name, read_seq):
+                        virus_chr, virus_coord, virus_strand, read_name):
         """ Create breakpoint dictionnary to create dataframe.
         """
         # check if hg - hpv or hpv - hg case
@@ -168,11 +163,7 @@ class BreakpointFinder(object):
         if virus_strand == '-':
             bpstart_virus, end_virus = end_virus, bpstart_virus
 
-        # get 30 bases of sequence
-        bp_pos = virus_coord[2 + i]
-        bp_sequence = read_seq[bp_pos - 15:bp_pos + 15]
         if virus_strand == '-':
-            bp_sequence = bp_sequence.translate(_TRANSTAB)[::-1]
             # the virus strand always set as '+'
             virus_strand = '+'
             if human_strand != 'Unknown':
@@ -188,7 +179,6 @@ class BreakpointFinder(object):
             ("end_virus", end_virus),
             ("strand_virus", virus_strand),
             ("read", read_name),
-            ("bp_sequence", bp_sequence)
         ])
 
     def clustering_breakpoints(self, human_thd=25, virus_thd=25):
@@ -302,10 +292,6 @@ def _bp_are_equal(bp1, bp2, margin=100):
     """
     iter_dict = zip(bp1.items(), bp2.items())
     for (k1, v1), (k2, v2) in iter_dict:
-        # ignore sequence
-        if k1 == 'bp_sequence':
-            continue
-
         # ignore unknown parameters
         if 'Unknown' in [v1, v2]:
             continue
