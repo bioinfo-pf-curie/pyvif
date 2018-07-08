@@ -7,7 +7,6 @@ import pandas as pd
 
 from . import logger, _PAF_COLNAMES
 from .bamtools import bam_to_paf
-from .exception import BadInputException
 from .plots import plot_histogram
 
 
@@ -50,7 +49,7 @@ class PAF(object):
         except ValueError:
             pass
         msg = "No correct input provided."
-        raise BadInputException(msg)
+        raise TypeError(msg)
 
     def number_mapped_reads(self):
         """ Return the number of mapped reads.

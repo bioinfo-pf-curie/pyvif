@@ -11,7 +11,6 @@ import pandas as pd
 from atropos.io.seqio import FastqReader
 
 from . import logger
-from .exception import BadInputException
 from .paftools import PAF
 
 _TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
@@ -61,7 +60,7 @@ class BreakpointFinder(object):
         # Check DataFrame and bamfile
         try:
             return PAF(filin).df
-        except BadInputException:
+        except TypeError:
             pass
         # Check PAF format
         try:
@@ -69,7 +68,7 @@ class BreakpointFinder(object):
         except AttributeError:
             pass
         msg = "No correct input provided."
-        raise BadInputException(msg)
+        raise TypeError(msg)
 
     def find_breakpoints(self):
         """ Find all breakpoints between the reference and the contig of
