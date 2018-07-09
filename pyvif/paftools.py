@@ -51,12 +51,12 @@ class PAF(object):
         msg = "No correct input provided."
         raise TypeError(msg)
 
-    def number_mapped_reads(self):
+    def reads_count(self):
         """ Return the number of mapped reads.
         """
         return len(self.df['q_name'].unique())
 
-    def plot_length(self, targets=None, filename=None, bins=100):
+    def plot_length(self, filename=None, targets=None, title=None, bins=100):
         """ Mapped reads length histogram.
 
         :params list targets: set of targets contigs name.
@@ -66,12 +66,17 @@ class PAF(object):
         Return image filename or show the plot.
         """
         # set plot title and get reads of interest
-        title = "Mapped read lengths"
-        if targets:
-            title += " on {} histogram".format(", ".join(targets))
+        if title is None:
+            title = "Mapped read lengths"
+            if targets:
+                title += " on {} histogram".format(", ".join(targets))
+            else:
+                title += " histogram"
+
+        # select targets
+        try:
             paf = self.df.loc[self.df['chr'].isin(targets)]
-        else:
-            title += " histogram"
+        except TypeError:
             paf = self.df
 
         # get data

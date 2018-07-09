@@ -2,5 +2,14 @@
 #}
 <div id="mainpage">
   <h1>PyVIF report</h1>
-  <h2>Python Virus Integration Finder is a tool that detects virus integration site using capture sequencing with Pacbio.</h2>
+    <h2>Python Virus Integration Finder is a tool that detects virus integration site using capture sequencing with Pacbio.</h2>
+
+    <h2 id="pyvif-qc">Quality Control</h2>
+      <p>The sample {{data_info['name']}} contains {{data_info['read_count']}} reads.</p>
+
+      <img src="data:image/png;base64,{{data_info["length_distrib"]}}">
+
+    <h2 id="pyvif-bp">Breakpoint Finder</h2>
+
+
 </div>

@@ -64,7 +64,7 @@ class BreakpointFinder(object):
             pass
         # Check PAF format
         try:
-            filin.number_mapped_reads()
+            filin.reads_count()
         except AttributeError:
             pass
         msg = "No correct input provided."

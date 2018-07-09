@@ -13,5 +13,6 @@ def main():
     env.globals['template_data'] = template_data
     template = env.get_template('main.html')
     report_output = template.render()
+
     with open('test.html', 'w') as fout:
         print(report_output, file=fout)
