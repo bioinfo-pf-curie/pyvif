@@ -34,3 +34,17 @@ def template_data(filename=None):
     if os.path.exists(filename):
         return filename
     raise FileNotFoundError("Unknown file {}.".format(filename))
+
+
+def embed_png(plot_function, output_arg, **kwargs):
+    """ Take plot function as input and return image as b64 string.
+    You must set output argument of plot function to connect the buffer.
+
+    :param func plot_function: plot function to embed.
+    :param str output_arg: output argument of plot_function.
+    :param **kwargs: plot functions argument.
+    """
+    buf = io.BytesIO()
+    kwargs = dict({output_arg: buf}, **kwargs)
+    plot_function(**kwargs)
+    return base64.b64encode(buf.getvalue()).decode('utf-8')
