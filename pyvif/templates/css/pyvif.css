@@ -1,12 +1,17 @@
+/* Document */
 body {
   background: #fafafa;
 }
 
-p {
-  font-size: 1.1em;
-  font-weight: 300;
-  line-height: 1.7em;
-  color: #999;
+h2.subtitle {
+    font-size: 1.0em;
+    padding-top: 0.5em;
+    color: #666;
+    border-bottom: none;
+    margin-top: 0.2em;
+    margin-left: 0;
+    margin-right: 0;
+    padding-top: 0.2em;
 }
 
 a, a:hover, a:focus {
@@ -15,11 +20,16 @@ a, a:hover, a:focus {
   transition: all 0.3s;
 }
 
+table {
+    padding-bottom: 5px;
+}
+
 #report-title {
     margin-top: 0px;
     padding-top: 20px;
 }
 
+/* SideNav */
 #sidenav {
     min-width: 250px;
     max-width: 250px;

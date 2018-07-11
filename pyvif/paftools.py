@@ -7,7 +7,7 @@ import pandas as pd
 
 from . import logger, _PAF_COLNAMES
 from .bamtools import bam_to_paf
-from .plots import plot_histogram
+from .plots import plot_histogram, init_plot
 
 
 class PAF(object):
@@ -101,27 +101,17 @@ class PAF(object):
         """
         # generate data
         position = self.df.groupby('chr').q_name.nunique()
-        # create figure
-        plt.figure(figsize=(10, 7.5))
-        ax = plt.subplot(111)
 
-        # remove top and right frame lines
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-
-        # increase font size and lean x labels
+        # init plot
+        fig, ax = init_plot("Positions of mapped reads", 'Contigs', 'Count')
         plt.xticks(fontsize=14, rotation=50)
-        plt.yticks(fontsize=14)
-        plt.xlabel("Contigs", fontsize=16)
-        plt.ylabel("Count", fontsize=16)
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
-        plt.title("Positions of mapped reads", fontsize=18)
-
         plt.bar(position.index, position, color="#3F5D7D")
 
         if filename:
-            plt.savefig(filename, bbox_inches="tight")
+            plt.savefig(filename, bbox_inches="tight",
+                        facecolor=fig.get_facecolor(), edgecolor='none')
             return filename
         plt.show()
 
@@ -191,6 +181,7 @@ class PAF(object):
         plt.ylabel("Count", fontsize=16)
         plt.title("Number of number of pass", fontsize=18)
 
+        init_plot("Count number of pass", "Number of pass", 'Count')
         plt.bar(pass_count.index, pass_count, color="#3F5D7D")
 
         if filename:

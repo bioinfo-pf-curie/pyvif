@@ -50,7 +50,7 @@ def bam_to_paf(filename, add_unmapped=False):
     try:
         unmapped = pd.DataFrame(length_list) 
         paf = paf.merge(unmapped, on=['q_name', 'q_length'], how='outer')
-    except NameError:
+    except (NameError, KeyError):
         pass
     return paf
 

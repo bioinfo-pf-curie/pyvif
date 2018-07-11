@@ -5,12 +5,19 @@
 import matplotlib.pyplot as plt
 
 
-def plot_histogram(data, title, xlabel, ylabel, filename=None, bins=100,
-                   color='#3F5D7D'):
-    """ Plot histogram.
+def init_plot(title, xlabel, ylabel, background='#fafafa'):
+    """ Init a matplotlib environment to create plot.
+
+    :param str title: title plot.
+    :param str xlabel: x label.
+    :param str ylabel: y label.
+
+    return figure and ax object.
     """
-    plt.figure(figsize=(10, 7.5))
+    fig = plt.figure(figsize=(10, 7.5))
     ax = plt.subplot(111)
+    fig.patch.set_facecolor(background)
+    ax.patch.set_facecolor(background)
 
     # remove top and right frame lines
     ax.spines['top'].set_visible(False)
@@ -24,9 +31,18 @@ def plot_histogram(data, title, xlabel, ylabel, filename=None, bins=100,
     plt.xlabel(xlabel, fontsize=16)
     plt.ylabel(ylabel, fontsize=16)
     plt.title(title, fontsize=18)
+    return fig, ax
+
+def plot_histogram(data, title, xlabel, ylabel, filename=None, bins=100,
+                   color='#3F5D7D'):
+    """ Plot histogram.
+    """
+    # init plot
+    fig, _ = init_plot(title, xlabel, ylabel)
 
     plt.hist(data, bins=bins, color=color)
     if filename:
-        plt.savefig(filename, bbox_inches="tight")
+        plt.savefig(filename, bbox_inches="tight",
+                    facecolor=fig.get_facecolor(), edgecolor='none')
         return filename
     plt.show()
