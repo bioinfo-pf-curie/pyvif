@@ -1,18 +1,29 @@
 {# Add main content in main HTML file. 
 #}
 <div id="mainpage">
+  
   <h1>PyVIF report</h1>
+
     <h2 class="subtitle">Python Virus Integration Finder is a tool that detects virus integration site using capture sequencing with Pacbio.</h2>
 
     <h2 id="pyvif-qc">Quality Control</h2>
-      <p>The sample {{pyvif_qc['name']}} contains {{pyvif_qc['read_count']}} reads.</p>
 
-      <img src="data:image/png;base64,{{pyvif_qc["length_distrib"]}}">
+      <h3 id="basic-metrics"> Basic Metrics </h3>
 
-      <img src="data:image/png;base64,{{pyvif_qc["hpv_type"]}}">
+        <p>The sample {{pyvif_qc['name']}} contains {{pyvif_qc['read_count']}} reads.</p>
+
+        <img style="width:1000px;height:750px;" src="data:image/png;base64,{{pyvif_qc["length_distrib"]}}">
+
+        <img style="width:1000px;height:750px;" src="data:image/png;base64,{{pyvif_qc["pass_number"]}}">
+
+      <h3 id="virus-type">Virus Type</h3>
+        
+        <img style="width:1000px;height:750px;" src="data:image/png;base64,{{pyvif_qc["hpv_type"]}}">
 
     <h2 id="pyvif-bp">Breakpoint Finder</h2>
-
-      {{pyvif_bp['cluster_table']}}
+      
+      <h3 id="bp-cluster">Breakpoint Clusters</h3>
+      
+        {{pyvif_bp['cluster_table']}}
 
 </div>

@@ -8,7 +8,6 @@ I detect breakpoint with the minimap2 mapping and breakpoints sequences.
 from collections import OrderedDict
 
 import pandas as pd
-from atropos.io.seqio import FastqReader
 
 from . import logger
 from .paftools import PAF
@@ -221,7 +220,7 @@ class BreakpointFinder(object):
             for cluster in sorted_group[:top_cluster]
         ]
         return pd.DataFrame(
-            cluster_df, 
+            cluster_df,
             columns=['name', 'chromosome', 'median_bpstart_human',
                      'max_end_human', 'strand_human', 'median_bpstart_virus',
                      'max_end_virus', 'number_of_read'],
@@ -263,6 +262,7 @@ class BreakpointFinder(object):
         # remove the cluster of interest to get connections
         connections = inter_read.loc[inter_read['human_clust'] != cluster_nb]
         return connections
+
 
 def _get_max_end(subdf, target):
     start = "bpstart_" + target
@@ -312,6 +312,6 @@ def _bp_are_equal(bp1, bp2, margin=100):
             cond = abs(v1 - v2) < margin
         except TypeError:
             cond = v1 == v2
-        if cond is False: 
+        if cond is False:
             return False
     return True

@@ -60,6 +60,7 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
+            'pyvif=pyvif.cli:main',
         ],
     },
 )

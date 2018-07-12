@@ -166,25 +166,11 @@ class PAF(object):
         # count number of number of pass
         pass_count = zmw_count.value_counts()
 
-        # create figure
-        plt.figure(figsize=(10, 7.5))
-        ax = plt.subplot(111)
-
-        # remove top and right frame lines
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-
-        # increase font size and lean x labels
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
-        plt.xlabel("Number of pass", fontsize=16)
-        plt.ylabel("Count", fontsize=16)
-        plt.title("Number of number of pass", fontsize=18)
-
-        init_plot("Count number of pass", "Number of pass", 'Count')
+        fig, _ = init_plot("Count number of pass", "Number of pass", 'Count')
         plt.bar(pass_count.index, pass_count, color="#3F5D7D")
 
         if filename:
-            plt.savefig(filename, bbox_inches="tight")
+            plt.savefig(filename, bbox_inches="tight",
+                        facecolor=fig.get_facecolor(), edgecolor='none')
             return filename
         plt.show()

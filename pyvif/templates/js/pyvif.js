@@ -9,16 +9,8 @@ $(function () {
     $('#sidenav, #mainpage, #sidenav-logo').toggleClass('hide-nav');
     $('#sidenav-collapse span').toggleClass('fa-angle-left fa-angle-right');
   });
-});
 
-$(document).ready(function(){
   $('#bp_clustering').DataTable({
-    'dom': '<"top"Bfi>rt',
-    'order': [[ 6, 'desc' ]],
-    'buttons': ['csv', 'copy'],
-    'deferRender': true,
-    'scrollY': 300,
-    'scrollCollapse': true,
-    'scroller': true
+    'order': [[ 6, 'desc' ]]
   });
 });

@@ -22,6 +22,7 @@ a, a:hover, a:focus {
 
 table {
     padding-bottom: 5px;
+    width: 100%;
 }
 
 #report-title {
@@ -88,7 +89,7 @@ table {
 }
 
 #mainpage {
-    margin-left: 270px;
+    margin: 0px 10px 10px 270px;
     transition: all 0.3s; 
 }
 
