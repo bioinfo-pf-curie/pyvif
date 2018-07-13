@@ -6,6 +6,7 @@ I detect breakpoint with the minimap2 mapping and breakpoints sequences.
 """
 
 from collections import OrderedDict
+from itertools import takewhile
 
 import pandas as pd
 
@@ -202,10 +203,10 @@ class BreakpointFinder(object):
         logger.info("They are {} different breakpoints in virus genome."
                     .format(len(self.bps['virus_clust'].unique())))
 
-    def summarize_human_clustering(self, top_cluster=10):
+    def summarize_human_clustering(self, threshold=20):
         """ Return a dataframe that summarizes bigger clusters.
 
-        :params int top_cluster: number of bigger cluster to summerize.
+        :params int threshold: minimum size of cluster.
         """
         # get groups
         try:
@@ -217,7 +218,7 @@ class BreakpointFinder(object):
                               reverse=True)
         cluster_df = [
             self._summarize_sub_df(cluster)
-            for cluster in sorted_group[:top_cluster]
+            for cluster in takewhile(lambda x: len(x[1]) >= threshold, sorted_group)
         ]
         return pd.DataFrame(
             cluster_df,

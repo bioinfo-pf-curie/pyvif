@@ -3,12 +3,12 @@
 """Console script for pyvif."""
 
 import os
-import sys
 
-import matplotlib
-matplotlib.use('Agg')
 import click
 from jinja2 import Environment, PackageLoader
+# change backend of matplotlib
+import matplotlib
+matplotlib.use('Agg')
 
 from .bamtools import bam_to_paf
 from .bp_finder import BreakpointFinder
@@ -20,7 +20,7 @@ from .utils import include_file, template_data, embed_png
     context_settings={'help_option_names': ['-h', '--help']}
 )
 @click.option(
-    '-h', '--human',
+    '-u', '--human',
     type=click.Path(exists=True),
     metavar='BAM',
     nargs=1,
@@ -53,19 +53,22 @@ from .utils import include_file, template_data, embed_png
 )
 def main(human, virus, output, control):
     # do the general quality control
-    virus_df = bam_to_paf(virus, add_unmapped=True)
-    qc_paf = PAF(virus_df)
+    qc_df = bam_to_paf(virus, add_unmapped=True)
+    qc_paf = PAF(qc_df)
+    # get reads that hit control genes
+    control_df = bam_to_paf(control) if control is not None else None
     # remove unmapped reads
-    virus_df = virus_df.dropna()
+    virus_df = qc_df.dropna()
     virus_paf = PAF(virus_df)
     # Find breakpoints
-    bp_finder = BreakpointFinder(human, virus_df)
+    human_df = bam_to_paf(human)
+    bp_finder = BreakpointFinder(human_df, virus_df)
     bp_finder.clustering_breakpoints()
     summarize = bp_finder.summarize_human_clustering()
 
     pyvif_qc = {
         'name': os.path.basename(human).rstrip('.bam'),
-        'read_count': control_paf.reads_count(),
+        'basic_metrics': _basic_metrics_table(human_df, qc_df, control_df),
         'length_distrib': embed_png(qc_paf.plot_length, 'filename',
                                     title="Length distribution of reads"),
         'pass_number': embed_png(qc_paf.plot_number_pass, 'filename'),
@@ -96,10 +99,25 @@ def main(human, virus, output, control):
 
 
 def _basic_metrics_table(human_df, qc_df, control_df=None):
-    total = len(qc_df['q_name'].unique())
+    # count subreads
     virus_df = qc_df.dropna()
-    on_target = 
-    on_target = len(virus_df['q_name'].unique())
-    only_hpv = len(virus_df.loc[~virus_df['q_name'].isin(human_df['q_name'])]['q_name'].unique())
-    bp_hpv = len(human_df.loc[human_df['q_name'].isin(virus_df['q_name'])]['q_name'].unique())
-    print(total, on_target, only_hpv, bp_hpv)
+    total = len(qc_df['q_name'].unique())
+    basic_metrics = {
+        'Total': total,
+        "On target": len(virus_df['q_name'].unique()), 
+        "On virus": len(virus_df['q_name'].unique()),
+        "Only virus": len(virus_df.loc[~virus_df['q_name'].isin(human_df['q_name'])]['q_name'].unique()),
+        "Breakpoint virus": len(human_df.loc[human_df['q_name'].isin(virus_df['q_name'])]['q_name'].unique()),
+    }
+    # add control count
+    try:
+        on_control = len(control_df['q_name'].unique())
+        basic_metrics["On control"] = on_control
+        basic_metrics["On target"] += on_control
+    except TypeError:
+        pass
+    # count percentage
+    basic_metrics = {
+        k: (v, "{:.2f}%".format(v / total * 100)) for k, v in basic_metrics.items()
+    }
+    return basic_metrics

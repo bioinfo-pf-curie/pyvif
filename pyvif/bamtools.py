@@ -73,6 +73,3 @@ def _get_query_end(read):
     if read.cigar[strand][0] in CLIP_FLAG:
         return read.infer_read_length() - read.cigar[strand][1]
     return read.infer_read_length()
-
-def _stop_loop():
-    raise StopIteration

@@ -10,7 +10,23 @@
 
       <h3 id="basic-metrics"> Basic Metrics </h3>
 
-        <p>The sample {{pyvif_qc['name']}} contains {{pyvif_qc['read_count']}} reads.</p>
+        <table class="table table-striped table-bordered" id="table_metrics">
+          <thead>
+            <th></th>
+            <th>Count</th>
+            <th>Percent</th>
+          </thead>
+          <tbody> 
+            {% for key, values in pyvif_qc["basic_metrics"].items() %}
+              <tr>  
+                <th> {{key}} </th>
+              {% for value in values %}
+                <td> {{value}} </td>    
+              {% endfor %}
+              </tr>  
+            {% endfor %}
+          </tbody>
+        </table>
 
         <img style="width:1000px;height:750px;" src="data:image/png;base64,{{pyvif_qc["length_distrib"]}}">
 
