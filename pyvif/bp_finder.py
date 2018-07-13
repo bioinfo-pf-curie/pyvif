@@ -9,9 +9,11 @@ from collections import OrderedDict
 from itertools import takewhile
 
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from . import logger
 from .paftools import PAF
+from .plots import init_plot
 
 _TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
 
@@ -263,6 +265,26 @@ class BreakpointFinder(object):
         # remove the cluster of interest to get connections
         connections = inter_read.loc[inter_read['human_clust'] != cluster_nb]
         return connections
+
+    def plot_number_bp(self, filename=None):
+        """ Plot the number of reads that hold multiple breakpoint.
+
+        :param str filename: filename to save image.
+
+        Return image filename or show the plot in ipython.
+        """
+        bp_count = self.bps['read'].value_counts().value_counts()
+        # Create plot
+        fig, ax = init_plot("Count number of breakpoints hold by reads",
+                           "Number of breakpoints", 'Count')
+        ax.set_yscale('log')
+        plt.bar(bp_count.index, bp_count, color="#3F5D7D")
+
+        if filename:
+            plt.savefig(filename, bbox_inches="tight",
+                        facecolor=fig.get_facecolor(), edgecolor='none')
+            return filename
+        plt.show()
 
 
 def _get_max_end(subdf, target):

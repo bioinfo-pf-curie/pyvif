@@ -11,7 +11,8 @@ $(function () {
   });
 
   $('#bp_clustering').DataTable({
-    'order': [[ 6, 'desc' ]]
+    'order': [[ 6, 'desc' ]],
+    'scrollX': true
   });
 
   $('#table_metrics').DataTable({
