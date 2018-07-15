@@ -25,6 +25,12 @@ table {
     width: 100%;
 }
 
+img.center{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 #report-title {
     margin-top: 0px;
     padding-top: 20px;
@@ -89,9 +95,11 @@ table {
 }
 
 #mainpage {
-    min-width: max-content;
-    width: 960px;
-    margin: 0px 10px 10px 270px;
+    width: 980px;
+    margin-right: auto;
+    margin-left: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
     transition: all 0.3s; 
 }
 

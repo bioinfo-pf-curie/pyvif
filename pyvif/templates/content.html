@@ -27,17 +27,19 @@
             {% endfor %}
           </tbody>
         </table>
-          <img style="height:80%;" src="data:image/png;base64,{{pyvif_qc["length_distrib"]}}">
+          <img class="center" style="height:80%;" src="data:image/png;base64,{{pyvif_qc["length_distrib"]}}">
 
-          <img style="height:80%;" src="data:image/png;base64,{{pyvif_qc["pass_number"]}}">
+          <img class="center" style="height:80%;" src="data:image/png;base64,{{pyvif_qc["pass_number"]}}">
 
       <h3 id="virus-type">Virus Type</h3>
-        
-          <img style="height:80%;" src="data:image/png;base64,{{pyvif_qc["hpv_type"]}}">
+
+          <img class="center" style="height:80%;" src="data:image/png;base64,{{pyvif_qc["hpv_type"]}}">
 
     <h2 id="pyvif-bp">Breakpoint Finder</h2>
       
       <h3 id="bp-cluster">Breakpoint Clusters</h3>
+          
+        <img class="center" style="height:80%;" src="data:image/png;base64,{{pyvif_bp["bp_count"]}}">
       
         {{pyvif_bp['cluster_table']}}
 

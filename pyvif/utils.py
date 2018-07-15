@@ -7,7 +7,7 @@ import io
 import os
 import pkg_resources
 
-from . import logger
+from pyvif import logger
 
 
 def include_file(name, b64=False):

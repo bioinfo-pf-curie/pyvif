@@ -5,9 +5,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from . import logger, _PAF_COLNAMES
-from .bamtools import bam_to_paf
-from .plots import plot_histogram, init_plot
+from pyvif import logger, _PAF_COLNAMES
+from pyvif.bamtools import bam_to_paf
+from pyvif.plots import plot_histogram, init_plot
 
 
 class PAF(object):

@@ -7,7 +7,7 @@ from itertools import takewhile
 import pandas as pd
 import pysam
 
-from . import logger, _PAF_COLNAMES
+from pyvif import logger, _PAF_COLNAMES
 
 CLIP_FLAG = {4, 5}
 

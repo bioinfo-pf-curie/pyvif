@@ -11,9 +11,9 @@ from itertools import takewhile
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from . import logger
-from .paftools import PAF
-from .plots import init_plot
+from pyvif import logger
+from pyvif.paftools import PAF
+from pyvif.plots import init_plot
 
 _TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
 

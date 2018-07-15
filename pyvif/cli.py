@@ -10,10 +10,10 @@ from jinja2 import Environment, PackageLoader
 import matplotlib
 matplotlib.use('Agg')
 
-from .bamtools import bam_to_paf
-from .bp_finder import BreakpointFinder
-from .paftools import PAF
-from .utils import include_file, template_data, embed_png
+from pyvif.bamtools import bam_to_paf
+from pyvif.bp_finder import BreakpointFinder
+from pyvif.paftools import PAF
+from pyvif.utils import include_file, template_data, embed_png
 
 
 @click.command(
@@ -77,6 +77,7 @@ def main(human, virus, output, control):
 
     pyvif_bp = {
         'palindromic_count': len(bp_finder.palindromics),
+        'bp_count': embed_png(bp_finder.plot_number_bp, 'filename'),
         'cluster_table': summarize.drop('name', axis=1).to_html(
             table_id='bp_clustering',
             index=False,

@@ -4,7 +4,7 @@
 
 from jinja2 import Environment, PackageLoader
 
-from .utils import include_file, template_data
+from pyvif.utils import include_file, template_data
 
 
 def main():
