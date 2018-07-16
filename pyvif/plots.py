@@ -5,7 +5,7 @@
 import matplotlib.pyplot as plt
 
 
-def init_plot(title, xlabel, ylabel, background='#fafafa'):
+def init_plot(title, xlabel, ylabel, background='#fafafa', log=False):
     """ Init a matplotlib environment to create plot.
 
     :param str title: title plot.
@@ -25,6 +25,9 @@ def init_plot(title, xlabel, ylabel, background='#fafafa'):
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
 
+    if log is True:
+        ax.set_yscale('log')
+
     # increase label font size
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
@@ -34,11 +37,11 @@ def init_plot(title, xlabel, ylabel, background='#fafafa'):
     return fig, ax
 
 def plot_histogram(data, title, xlabel, ylabel, filename=None, bins=100,
-                   color='#3F5D7D'):
+                   color='#3F5D7D', log=False):
     """ Plot histogram.
     """
     # init plot
-    fig, _ = init_plot(title, xlabel, ylabel)
+    fig, _ = init_plot(title, xlabel, ylabel, log=log)
 
     plt.hist(data, bins=bins, color=color)
     if filename:

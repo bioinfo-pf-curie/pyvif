@@ -89,7 +89,8 @@ class PAF(object):
             xlabel="Read lengths",
             ylabel="Count",
             filename=filename,
-            bins=bins
+            bins=bins,
+            log=True
         )
 
     def plot_positions(self, filename=None):
@@ -104,6 +105,7 @@ class PAF(object):
 
         # init plot
         fig, ax = init_plot("Positions of mapped reads", 'Contigs', 'Count')
+        ax.set_yscale('log')
         plt.xticks(fontsize=14, rotation=50)
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
@@ -166,7 +168,8 @@ class PAF(object):
         # count number of number of pass
         pass_count = zmw_count.value_counts()
 
-        fig, _ = init_plot("Count number of pass", "Number of pass", 'Count')
+        fig, ax = init_plot("Count number of pass", "Number of pass", 'Count')
+        ax.set_yscale('log')
         plt.bar(pass_count.index, pass_count, color="#3F5D7D")
 
         if filename:

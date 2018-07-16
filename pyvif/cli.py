@@ -70,7 +70,7 @@ def main(human, virus, output, control):
         'name': os.path.basename(human).rstrip('.bam'),
         'basic_metrics': _basic_metrics_table(human_df, qc_df, control_df),
         'length_distrib': embed_png(qc_paf.plot_length, 'filename',
-                                    title="Length distribution of reads"),
+                                    title="Read length distribution"),
         'pass_number': embed_png(qc_paf.plot_number_pass, 'filename'),
         'hpv_type': embed_png(virus_paf.plot_positions, 'filename'),
     }
