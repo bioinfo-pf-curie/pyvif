@@ -245,7 +245,7 @@ class BreakpointFinder(object):
             len(index)
         ]
 
-    def get_connections(self, chromosome, cluster_nb):
+    def get_connections(self, chromosome, cluster_nb, virus_clust=None):
         """ Get connection between clusters.
 
         :params int cluster_nb: cluster number to find connection with other
@@ -259,6 +259,10 @@ class BreakpointFinder(object):
             (self.bps['chromosome'] == chromosome)
             & (self.bps['human_clust'] == cluster_nb)
         ].set_index('read')
+        if virus_clust is not None:
+            cluster_bp = cluster_bp.loc[
+                cluster_bp['virus_clust'] == virus_clust
+            ]
         # get intersection reads
         intersection = cluster_bp.index.intersection(multi)
         inter_read = self.bps.loc[self.bps['read'].isin(intersection)]
