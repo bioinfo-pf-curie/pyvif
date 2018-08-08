@@ -34,6 +34,13 @@ class BreakpointFinder(object):
         self.paf, self.virus_contigs = self._init_paf(human, virus)
         self.palindromics = []
         self.bps = self.find_breakpoints()
+        self._clusters = None
+
+    @property
+    def clusters(self):
+        if self._clusters is None:
+            self.clustering_breakpoints()
+        return self._clusters
 
     def _init_paf(self, human, virus):
         """ Initiate intersect paf with alignment on human and on target.
@@ -149,12 +156,16 @@ class BreakpointFinder(object):
         i = 0 if human_coord[2] < virus_coord[2] else 1
 
         # get coord if strand is '+'
-        too_far = abs(human_coord[3 - i] - virus_coord[2 + i]) > 20
-        if human_mapq > 20 and not too_far:
+        too_far = abs(human_coord[3 - i] - virus_coord[2 + i]) > 100
+        if too_far:
+            human_chr = "Unmapped"
+            human_strand = bpstart_human = end_human = "Unknown"
+        elif human_mapq <= 30:
+            human_chr = "LowMapQ"
+            human_strand = bpstart_human = end_human = "Unknown"
+        else:
             bpstart_human = human_coord[1 - i]
             end_human = human_coord[0 + i]
-        else:
-            human_strand = human_chr = bpstart_human = end_human = "Unknown"
         bpstart_virus = virus_coord[0 + i]
         end_virus = virus_coord[1 - i]
 
@@ -182,7 +193,7 @@ class BreakpointFinder(object):
             ("read", read_name),
         ])
 
-    def clustering_breakpoints(self, human_thd=25, virus_thd=25):
+    def clustering_breakpoints(self, human_thd=1, virus_thd=1):
         """ Generate a clustering with bpstart_human and with bpstart_virus.
 
         :params int threshold: maximal distance between two breakpoint start.
@@ -190,7 +201,7 @@ class BreakpointFinder(object):
         Add 'human_clust' and 'virus_clust' in dataframe.
         """
         # clustering with human breakpoint start and chromosome
-        known_bp = self.bps.loc[self.bps['chromosome'] != 'Unknown']
+        known_bp = self.bps.loc[self.bps['bpstart_human'] != 'Unknown']
         clustering = known_bp.sort_values('bpstart_human')\
                              .groupby('chromosome')['bpstart_human']\
                              .diff().gt(human_thd).cumsum()
@@ -204,23 +215,20 @@ class BreakpointFinder(object):
         self.bps.loc[clustering.index, 'virus_clust'] = clustering
         logger.info("They are {} different breakpoints in virus genome."
                     .format(len(self.bps['virus_clust'].unique())))
+        grouped = self.bps.dropna().groupby(['chromosome', 'human_clust',
+                                             'virus_clust'])
+        self._clusters = sorted(grouped.groups.items(),
+                                key=lambda x: len(x[1]),
+                                reverse=True)
 
     def summarize_human_clustering(self, threshold=20):
         """ Return a dataframe that summarizes bigger clusters.
 
         :params int threshold: minimum size of cluster.
         """
-        # get groups
-        try:
-            grouped = self.bps.dropna().groupby(['chromosome', 'human_clust'])
-        except KeyError:
-            raise KeyError("Run the method `clustering_breakpoints` before"
-                           " this method.")
-        sorted_group = sorted(grouped.groups.items(), key=lambda x: len(x[1]),
-                              reverse=True)
         cluster_df = [
             self._summarize_sub_df(cluster)
-            for cluster in takewhile(lambda x: len(x[1]) >= threshold, sorted_group)
+            for cluster in takewhile(lambda x: len(x[1]) >= threshold, self.clusters)
         ]
         return pd.DataFrame(
             cluster_df,
@@ -245,30 +253,46 @@ class BreakpointFinder(object):
             len(index)
         ]
 
-    def get_connections(self, chromosome, cluster_nb, virus_clust=None):
+    def get_bp_in_cluster(self, rank):
+        """ Get breakpoint dataframe with the cluster rank.
+
+        :params int rank: cluster rank (0 based btw).
+
+        return dataframe with breakpoint from cluster.
+        """
+        cluster = self.clusters[rank]
+        return self.bps.loc[cluster[1]]
+
+    def get_bp_connections(self, rank):
         """ Get connection between clusters.
 
-        :params int cluster_nb: cluster number to find connection with other
-            cluster.
+        :params int rank: cluster rank (0 based btw).
+
+        return dataframe with connected breakpoint.
         """
         bp_count = self.bps['read'].value_counts()
         # get reads name with multiple breakpoints
         multi = bp_count.loc[bp_count > 1].index
         # get reads of the cluster
-        cluster_bp = self.bps.loc[
-            (self.bps['chromosome'] == chromosome)
-            & (self.bps['human_clust'] == cluster_nb)
-        ].set_index('read')
-        if virus_clust is not None:
-            cluster_bp = cluster_bp.loc[
-                cluster_bp['virus_clust'] == virus_clust
-            ]
+        cluster = self.clusters[rank]
+        cluster_bp = self.bps.loc[cluster[1]].set_index('read')
         # get intersection reads
         intersection = cluster_bp.index.intersection(multi)
         inter_read = self.bps.loc[self.bps['read'].isin(intersection)]
         # remove the cluster of interest to get connections
-        connections = inter_read.loc[inter_read['human_clust'] != cluster_nb]
+        connections = inter_read.loc[inter_read['human_clust'] != cluster[0][1]]
         return connections
+
+    def get_alignment_in_cluster(self, rank):
+        """ Get breakpoint alignment with the cluster rank.
+
+        :params int rank: cluster rank (0 based btw).
+
+        return dataframe with breakpoint from cluster.
+        """
+        cluster = self.clusters[rank]
+        reads = self.bps.loc[cluster[1]]['read'].unique()
+        return self.paf.loc[reads]
 
     def plot_number_bp(self, filename=None):
         """ Plot the number of reads that hold multiple breakpoint.
@@ -279,10 +303,39 @@ class BreakpointFinder(object):
         """
         bp_count = self.bps['read'].value_counts().value_counts()
         # Create plot
-        fig, ax = init_plot("Count number of breakpoints hold by reads",
-                           "Number of breakpoints", 'Count')
-        ax.set_yscale('log')
+        fig, ax = init_plot(
+            title="Count number of breakpoints hold by reads",
+            xlabel="Number of breakpoints",
+            ylabel="Count",
+            log=True
+        )
         plt.bar(bp_count.index, bp_count, color="#3F5D7D")
+
+        if filename:
+            plt.savefig(filename, bbox_inches="tight",
+                        facecolor=fig.get_facecolor(), edgecolor='none')
+            return filename
+        plt.show()
+
+    def plot_connections_locations(self, rank, filename=None):
+        """ Plot where connections are located.
+
+        :param str filename: filename to save image.
+
+        Return image filename or show the plot in ipython.
+        """
+        bp_connections = self.get_bp_connections(rank)
+        posi_count = bp_connections['chromosome'].value_counts()
+        fig, ax = init_plot(
+            title="Position of connections",
+            xlabel="Positions",
+            ylabel="Count",
+            log=True
+        )
+        plt.xticks(fontsize=14, rotation=50)
+        for tick in ax.xaxis.get_majorticklabels():
+            tick.set_horizontalalignment('right')
+        plt.bar(posi_count.index, posi_count, color="#3F5D7D")
 
         if filename:
             plt.savefig(filename, bbox_inches="tight",
@@ -318,8 +371,8 @@ def _bp_are_equal(bp1, bp2, margin=100):
     """
     iter_dict = zip(bp1.items(), bp2.items())
     for (k1, v1), (k2, v2) in iter_dict:
-        # ignore unknown parameters
-        if 'Unknown' in [v1, v2]:
+        # pass if a parameter is unknown
+        if "Unknown" in [k1, v1]:
             continue
 
         # stop parameter need special comparison
