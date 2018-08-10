@@ -40,7 +40,7 @@ class PAF(object):
             msg = ("DataFrame input must have these columns in this order:"
                    " {}".format(" - ".join(_PAF_COLNAMES)))
             logger.error(msg)
-            raise BadInputException(msg)
+            raise TypeError(msg)
         except AttributeError:
             pass
         # Check bam file
@@ -98,7 +98,7 @@ class PAF(object):
 
         :params str filename: filename to save images.
 
-        Return image filename or dictionnary with barplot results.
+        Return image filename.
         """
         # generate data
         position = self.df.groupby('chr').q_name.nunique()

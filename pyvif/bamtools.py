@@ -17,6 +17,7 @@ def bam_to_paf(filename, add_unmapped=False):
     PAF format usable by :class:`paftools.PAF`.
 
     :param str filename: sorted aligned bam file.
+    :param bool add_unmapped: add unmapped reads.
     """
     logger.info("Scanning input file. Please wait.")
     with pysam.AlignmentFile(filename) as bam_in:

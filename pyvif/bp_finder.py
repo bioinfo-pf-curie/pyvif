@@ -11,7 +11,7 @@ from itertools import takewhile
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from pyvif import logger
+from pyvif import logger, _PAF_COLNAMES
 from pyvif.paftools import PAF
 from pyvif.plots import init_plot
 
@@ -196,7 +196,10 @@ class BreakpointFinder(object):
     def clustering_breakpoints(self, human_thd=1, virus_thd=1):
         """ Generate a clustering with bpstart_human and with bpstart_virus.
 
-        :params int threshold: maximal distance between two breakpoint start.
+        :params int human_thd: maximal distance between two human breakpoint
+                               start.
+        :params int virus_thd: maximal distance between two virus breakpoint
+                               start.
 
         Add 'human_clust' and 'virus_clust' in dataframe.
         """
@@ -228,7 +231,8 @@ class BreakpointFinder(object):
         """
         cluster_df = [
             self._summarize_sub_df(cluster)
-            for cluster in takewhile(lambda x: len(x[1]) >= threshold, self.clusters)
+            for cluster in takewhile(lambda x: len(x[1]) >= threshold,
+                                     self.clusters)
         ]
         return pd.DataFrame(
             cluster_df,
@@ -293,6 +297,16 @@ class BreakpointFinder(object):
         cluster = self.clusters[rank]
         reads = self.bps.loc[cluster[1]]['read'].unique()
         return self.paf.loc[reads]
+
+    def plot_positions(self, filename=None):
+        """ Barplot of reads position in reference.
+        
+        :param str filename: filename to save images.
+
+        Return image filename.
+        """
+        paf = PAF(self.paf.reset_index()[_PAF_COLNAMES])
+        return paf.plot_positions(filename=filename)
 
     def plot_number_bp(self, filename=None):
         """ Plot the number of reads that hold multiple breakpoint.
