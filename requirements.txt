@@ -1,7 +1,9 @@
-click
-jinja2
-matplotlib
-numpy
+click>=6.7
+jinja2>=2.10
+jupyter
+matplotlib>=2.2.2
+numpy>=1.14.3
 pandas>=0.23.1
-pysam
-pytest
+pysam>=0.14.1
+python=3.6
+pytest>=3.6.1

@@ -308,6 +308,25 @@ class BreakpointFinder(object):
         paf = PAF(self.paf.reset_index()[_PAF_COLNAMES])
         return paf.plot_positions(filename=filename)
 
+    def plot_bp_positions(self, filename=None):
+        bp_position = self.bps['chromosome'].value_counts()
+        fig, ax = init_plot(
+            title="Position of breakpoints",
+            xlabel="Positions",
+            ylabel="Count",
+            log=True
+        )
+
+        plt.xticks(fontsize=14, rotation=50)
+        for tick in ax.xaxis.get_majorticklabels():
+            tick.set_horizontalalignment('right')
+        plt.bar(bp_position.index, bp_position, color="#3F5D7D")
+        if filename:
+            plt.savefig(filename, bbox_inches="tight",
+                        facecolor=fig.get_facecolor(), edgecolor='none')
+            return filename
+        plt.show()
+
     def plot_number_bp(self, filename=None):
         """ Plot the number of reads that hold multiple breakpoint.
 
