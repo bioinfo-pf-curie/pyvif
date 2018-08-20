@@ -4,8 +4,10 @@
 
 import matplotlib.pyplot as plt
 
+from pyvif.config import COLOR, BACKGROUND
 
-def init_plot(title="", xlabel="", ylabel="", background='#fafafa', log=False):
+
+def init_plot(title="", xlabel="", ylabel="", log=False):
     """ Init a matplotlib environment to create plot.
 
     :param str title: title plot.
@@ -16,8 +18,8 @@ def init_plot(title="", xlabel="", ylabel="", background='#fafafa', log=False):
     """
     fig = plt.figure(figsize=(10, 7.5))
     ax = plt.subplot(111)
-    fig.patch.set_facecolor(background)
-    ax.patch.set_facecolor(background)
+    fig.patch.set_facecolor(BACKGROUND)
+    ax.patch.set_facecolor(BACKGROUND)
 
     # remove top and right frame lines
     ax.spines['top'].set_visible(False)
@@ -38,13 +40,13 @@ def init_plot(title="", xlabel="", ylabel="", background='#fafafa', log=False):
 
 
 def plot_histogram(data, title, xlabel, ylabel, filename=None, bins=100,
-                   color='#3F5D7D', log=False):
+                   log=False):
     """ Plot histogram.
     """
     # init plot
     fig, _ = init_plot(title, xlabel, ylabel, log=log)
 
-    plt.hist(data, bins=bins, color=color)
+    plt.hist(data, bins=bins, color=COLOR)
     if filename:
         plt.savefig(filename, bbox_inches="tight",
                     facecolor=fig.get_facecolor(), edgecolor='none')

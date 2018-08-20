@@ -6,9 +6,13 @@ import os
 
 import click
 from jinja2 import Environment, PackageLoader
+
 # change backend of matplotlib
 import matplotlib
 matplotlib.use('Agg')
+# change plot background color
+from pyvif import config
+config.BACKGROUND = "#fafafa"
 
 from pyvif.bamtools import bam_to_paf
 from pyvif.bp_finder import BreakpointFinder

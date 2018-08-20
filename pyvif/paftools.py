@@ -8,6 +8,7 @@ import pandas as pd
 from pyvif import logger, _PAF_COLNAMES
 from pyvif.bamtools import bam_to_paf
 from pyvif.plots import plot_histogram, init_plot
+from pyvif.config import COLOR
 
 
 class PAF(object):
@@ -109,7 +110,7 @@ class PAF(object):
         plt.xticks(fontsize=14, rotation=50)
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
-        plt.bar(position.index, position, color="#3F5D7D")
+        plt.bar(position.index, position, color=COLOR)
 
         if filename:
             plt.savefig(filename, bbox_inches="tight",
@@ -170,7 +171,7 @@ class PAF(object):
 
         fig, ax = init_plot("Count number of pass", "Number of pass", 'Count')
         ax.set_yscale('log')
-        plt.bar(pass_count.index, pass_count, color="#3F5D7D")
+        plt.bar(pass_count.index, pass_count, color=COLOR)
 
         if filename:
             plt.savefig(filename, bbox_inches="tight",

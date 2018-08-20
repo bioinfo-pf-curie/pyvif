@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from pyvif import logger, _PAF_COLNAMES
 from pyvif.paftools import PAF
 from pyvif.plots import init_plot
+from pyvif.config import COLOR
 
 _TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
 
@@ -320,7 +321,7 @@ class BreakpointFinder(object):
         plt.xticks(fontsize=14, rotation=50)
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
-        plt.bar(bp_position.index, bp_position, color="#3F5D7D")
+        plt.bar(bp_position.index, bp_position, color=COLOR)
         if filename:
             plt.savefig(filename, bbox_inches="tight",
                         facecolor=fig.get_facecolor(), edgecolor='none')
@@ -342,7 +343,7 @@ class BreakpointFinder(object):
             ylabel="Count",
             log=True
         )
-        plt.bar(bp_count.index, bp_count, color="#3F5D7D")
+        plt.bar(bp_count.index, bp_count, color=COLOR)
 
         if filename:
             plt.savefig(filename, bbox_inches="tight",
@@ -368,7 +369,7 @@ class BreakpointFinder(object):
         plt.xticks(fontsize=14, rotation=50)
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
-        plt.bar(posi_count.index, posi_count, color="#3F5D7D")
+        plt.bar(posi_count.index, posi_count, color=COLOR)
 
         if filename:
             plt.savefig(filename, bbox_inches="tight",
