@@ -7,7 +7,7 @@ pacbio.
 ## Contribution & Support
 
 Contributions and suggestions for new features are welcome, as are bug reports !
-Please create a new [issue](https://gitlab.curie.fr/dm-toolbox/Preprocessing/issues) for any of these.
+Please create a new [issue](https://gitlab.curie.fr/ddesvill/pyvif/issues) for any of these.
 
 If in doubt, feel free to get in touch with the authors directly:
 
