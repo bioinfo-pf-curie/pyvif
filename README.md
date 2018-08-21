@@ -2,7 +2,7 @@
 
 Python Virus Integration Finder detects integration site of virus in human genome using capture
 pacbio.
-**Please see the** [documentation](doc/README.md) for install and usage process.
+**Please see the** [documentation](docs/README.md) for install and usage process.
 
 ## Contribution & Support
 
