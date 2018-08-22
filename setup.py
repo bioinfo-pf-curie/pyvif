@@ -11,10 +11,10 @@ _MICRO               = 0
 version              = '{}.{}.{}'.format(_MAJOR, _MINOR, _MICRO)
 release              = '{}.{}'.format(_MAJOR, _MINOR)
 
-with open('README.rst') as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('HISTORY.md') as history_file:
     history = history_file.read()
 
 requirements = ['Click>=6.0', 'jinja2', 'matplotlib', 'numpy', 'pandas',
