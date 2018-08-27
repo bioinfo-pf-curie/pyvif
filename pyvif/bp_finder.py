@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 from pyvif import logger, _PAF_COLNAMES
 from pyvif.paftools import PAF
-from pyvif.plots import init_plot
+from pyvif.plots import init_plot, generate_plot
 from pyvif.config import COLOR
 
 _TRANSTAB = str.maketrans("ACGTacgt", "TGCAtgca")
@@ -205,22 +205,21 @@ class BreakpointFinder(object):
         Add 'human_clust' and 'virus_clust' in dataframe.
         """
         # clustering with human breakpoint start and chromosome
-        known_bp = self.bps.loc[self.bps['bpstart_human'] != 'Unknown']
+        cond = self.bps['bpstart_human'] != 'Unknown'
+        known_bp = self.bps.loc[cond]
         clustering = known_bp.sort_values('bpstart_human')\
                              .groupby('chromosome')['bpstart_human']\
                              .diff().gt(human_thd).cumsum()
         self.bps.loc[clustering.index, 'human_clust'] = clustering
-        grouped = self.bps.dropna().groupby(['chromosome', 'human_clust'])
-        logger.info("They are {} different breakpoints in human genome."
-                    .format(len(grouped.groups)))
+        # create cluster with Unmapped and LowMapQ
+        self.bps['human_clust'] = self.bps['human_clust'].fillna(max(clustering) + 1)\
+                                                         .astype(int)
         # clustering with virus breakpoint start
         clustering = self.bps.sort_values('bpstart_virus')['bpstart_virus']\
                              .diff().gt(virus_thd).cumsum()
         self.bps.loc[clustering.index, 'virus_clust'] = clustering
-        logger.info("They are {} different breakpoints in virus genome."
-                    .format(len(self.bps['virus_clust'].unique())))
-        grouped = self.bps.dropna().groupby(['chromosome', 'human_clust',
-                                             'virus_clust'])
+        grouped = self.bps.groupby(['chromosome', 'human_clust',
+                                    'virus_clust'])
         self._clusters = sorted(grouped.groups.items(),
                                 key=lambda x: len(x[1]),
                                 reverse=True)
@@ -247,16 +246,28 @@ class BreakpointFinder(object):
         """
         name, index = cluster
         subdf = self.bps.loc[index]
-        return [
-            name,
-            subdf['chromosome'].max(),
-            subdf['bpstart_human'].median(),
-            _get_max_end(subdf, 'human'),
-            subdf['strand_human'].max(),
-            subdf['bpstart_virus'].median(),
-            _get_max_end(subdf, 'virus'),
-            len(index)
-        ]
+        try:
+            return [
+                name,
+                subdf['chromosome'].max(),
+                subdf['bpstart_human'].median(),
+                _get_max_end(subdf, 'human'),
+                subdf['strand_human'].max(),
+                subdf['bpstart_virus'].median(),
+                _get_max_end(subdf, 'virus'),
+                len(index)
+            ]
+        except TypeError:
+            return [
+                name,
+                subdf['chromosome'].max(),
+                "Unknown",
+                "Unknown",
+                "Unknown",
+                subdf['bpstart_virus'].median(),
+                _get_max_end(subdf, 'virus'),
+                len(index)
+            ]
 
     def get_bp_in_cluster(self, rank):
         """ Get breakpoint dataframe with the cluster rank.
@@ -322,11 +333,8 @@ class BreakpointFinder(object):
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
         plt.bar(bp_position.index, bp_position, color=COLOR)
-        if filename:
-            plt.savefig(filename, bbox_inches="tight",
-                        facecolor=fig.get_facecolor(), edgecolor='none')
-            return filename
-        plt.show()
+        return generate_plot(filename, fig)
+
 
     def plot_number_bp(self, filename=None):
         """ Plot the number of reads that hold multiple breakpoint.
@@ -344,12 +352,8 @@ class BreakpointFinder(object):
             log=True
         )
         plt.bar(bp_count.index, bp_count, color=COLOR)
+        return generate_plot(filename, fig)
 
-        if filename:
-            plt.savefig(filename, bbox_inches="tight",
-                        facecolor=fig.get_facecolor(), edgecolor='none')
-            return filename
-        plt.show()
 
     def plot_connections_locations(self, rank, filename=None):
         """ Plot where connections are located.
@@ -370,12 +374,7 @@ class BreakpointFinder(object):
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
         plt.bar(posi_count.index, posi_count, color=COLOR)
-
-        if filename:
-            plt.savefig(filename, bbox_inches="tight",
-                        facecolor=fig.get_facecolor(), edgecolor='none')
-            return filename
-        plt.show()
+        return generate_plot(filename, fig)
 
 
 def _get_max_end(subdf, target):

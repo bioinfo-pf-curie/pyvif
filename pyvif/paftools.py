@@ -7,7 +7,7 @@ import pandas as pd
 
 from pyvif import logger, _PAF_COLNAMES
 from pyvif.bamtools import bam_to_paf
-from pyvif.plots import plot_histogram, init_plot
+from pyvif.plots import plot_histogram, init_plot, generate_plot
 from pyvif.config import COLOR
 
 
@@ -111,12 +111,7 @@ class PAF(object):
         for tick in ax.xaxis.get_majorticklabels():
             tick.set_horizontalalignment('right')
         plt.bar(position.index, position, color=COLOR)
-
-        if filename:
-            plt.savefig(filename, bbox_inches="tight",
-                        facecolor=fig.get_facecolor(), edgecolor='none')
-            return filename
-        plt.show()
+        return generate_plot(filename, fig)
 
     def plot_length_vs_mapping(self, targets=None, filename=None, bins=100):
         """ 2D histogram of target positive reads length versus percentage of
@@ -148,10 +143,8 @@ class PAF(object):
         plt.hist2d(paf['q_length'], paf['%_aligned'], bins=bins,
                    cmap=cm.afmhot_r)
         plt.colorbar()
-        if filename:
-            plt.savefig(filename, bbox_inches="tight")
-            return filename
-        plt.show()
+        return generate_plot(filename, fig)
+
 
     def plot_number_pass(self, filename=None):
         """ Plot the distribution of pass number.
@@ -172,9 +165,4 @@ class PAF(object):
         fig, ax = init_plot("Count number of pass", "Number of pass", 'Count')
         ax.set_yscale('log')
         plt.bar(pass_count.index, pass_count, color=COLOR)
-
-        if filename:
-            plt.savefig(filename, bbox_inches="tight",
-                        facecolor=fig.get_facecolor(), edgecolor='none')
-            return filename
-        plt.show()
+        return generate_plot(filename, fig)

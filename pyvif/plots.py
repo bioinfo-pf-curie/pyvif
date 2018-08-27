@@ -47,6 +47,9 @@ def plot_histogram(data, title, xlabel, ylabel, filename=None, bins=100,
     fig, _ = init_plot(title, xlabel, ylabel, log=log)
 
     plt.hist(data, bins=bins, color=COLOR)
+    return generate_plot(filename, fig)
+
+def generate_plot(filename, fig):
     if filename:
         plt.savefig(filename, bbox_inches="tight",
                     facecolor=fig.get_facecolor(), edgecolor='none')
