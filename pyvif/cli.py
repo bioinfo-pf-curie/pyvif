@@ -85,7 +85,7 @@ def main(human, virus, output, control):
         'cluster_table': summarize.drop('name', axis=1).to_html(
             table_id='bp_clustering',
             index=False,
-            float_format='%i',
+            float_format=lambda x: "{:.0f}".format(x),
             border=0,
             classes='table table-striped table-bordered',
             justify='center'
