@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
-""" A second version of breakpoint detection
+""" Breakpoint toolbox
 
 I detect breakpoint with the minimap2 mapping and breakpoints sequences.
 """
 
+import time
 from collections import OrderedDict
 from itertools import takewhile
+from multiprocessing import Pool, TimeoutError
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -80,20 +82,25 @@ class BreakpointFinder(object):
         msg = "No correct input provided."
         raise TypeError(msg)
 
-    def find_breakpoints(self):
+    def find_breakpoints(self, threads=1):
         """ Find all breakpoints between the reference and the contig of
         virus.
         """
         logger.info("Breakpoint research is running...")
-        self.palindromics = []
-        breakpoints = list()
-        for read_name in self.paf.index.unique():
-            try:
-                breakpoints += self._get_read_breakpoints(read_name)
-            except TypeError:
-                pass
+        with Pool(processes=threads) as pool:
+            breakpoints = pool.map(
+                self._get_read_breakpoints,
+                self.paf.index.unique()
+            )
+#        self.palindromics = []
+#        breakpoints = list()
+#        for read_name in self.paf.index.unique():
+#            try:
+#                breakpoints += self._get_read_breakpoints(read_name)
+#            except TypeError:
+#                pass
         logger.info("{} breakpoints are found.".format(len(breakpoints)))
-        return pd.DataFrame(breakpoints)
+        return breakpoints
 
     def _get_read_breakpoints(self, name):
         try:
