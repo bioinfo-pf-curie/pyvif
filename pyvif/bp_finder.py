@@ -194,6 +194,14 @@ class BreakpointFinder(object):
             ("read", read_name),
         ])
 
+    def n50(self):
+        """ Compute N50 for hybrid reads.
+        """
+        lengths = self.paf.groupby('q_name')\
+                          .q_length.max()\
+                          .sort_values(ascending=False)
+        return lengths.loc[lengths.cumsum() >= sum(lengths) / 2][0]
+
     def clustering_breakpoints(self, human_thd=1, virus_thd=1):
         """ Generate a clustering with bpstart_human and with bpstart_virus.
 
@@ -312,7 +320,7 @@ class BreakpointFinder(object):
 
     def plot_positions(self, filename=None):
         """ Barplot of reads position in reference.
-        
+
         :param str filename: filename to save images.
 
         Return image filename.
@@ -335,7 +343,6 @@ class BreakpointFinder(object):
         plt.bar(bp_position.index, bp_position, color=COLOR)
         return generate_plot(filename, fig)
 
-
     def plot_number_bp(self, filename=None):
         """ Plot the number of reads that hold multiple breakpoint.
 
@@ -354,6 +361,34 @@ class BreakpointFinder(object):
         plt.bar(bp_count.index, bp_count, color=COLOR)
         return generate_plot(filename, fig)
 
+    def plot_density_virus_human(self, filename=None):
+        from matplotlib import cm
+        fig, ax = init_plot("", "Human Size (base)", "Virus Size (base)")
+
+        hybrid_name = self.paf.loc[~self.paf['chr'].isin(self.virus_contigs)]\
+                              .index.unique()
+        hybrid = self.paf.loc[hybrid_name].reset_index()
+        hybrid['size'] = hybrid['q_end'] - hybrid['q_start']
+        hybrid = hybrid.set_index('q_name')
+
+        def get_size(name):
+            subdf = hybrid.loc[name]
+            virus = human = 0
+            for chrom, size in zip(subdf['chr'], subdf['size']):
+                if chrom in self.virus_contigs:
+                    virus += size
+                else:
+                    human += size
+            return virus, human
+
+        virus_human_list = [get_size(name) for name in hybrid_name]
+        df = pd.DataFrame(virus_human_list, columns=['virus', 'human'])
+        # zoom on 99% of data
+        plt.hist2d(df['human'], df['virus'], bins=500, cmap=cm.viridis)
+        plt.colorbar()
+        ax.set_xlim(0, df['human'].quantile(0.99) + 1000)
+        ax.set_ylim(0, df['virus'].quantile(0.99) + 1000)
+        return generate_plot(filename, fig)
 
     def plot_connections_locations(self, rank, filename=None):
         """ Plot where connections are located.
