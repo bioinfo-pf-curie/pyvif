@@ -6,7 +6,7 @@ I detect breakpoint with the minimap2 mapping and breakpoints sequences.
 """
 
 import time
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from itertools import takewhile
 from multiprocessing import Pool, TimeoutError
 
@@ -25,19 +25,22 @@ class BreakpointFinder(object):
     """ Object that detect all breakpoint present in PacBio data.
     It uses a mapping on human and viruses genomes.
     """
-    def __init__(self, human, virus):
+    def __init__(self, human, virus, threads=1):
         """.. rubric:: constructor
 
         :param human: PAF* format of mapping on human genome or BAM file.
         :param virus: PAF* format of mapping on virus genomes or BAM file.
+        :param int threads: number of threads.
 
         *PAF correspond to :class:`pbcapture.bamtools.PAF` object or a PAF
         file created by :meth:`pbcapture.bamtools.PAF.to_csv`.
         """
         self.paf, self.virus_contigs = self._init_paf(human, virus)
+        self.threads = threads
         self.palindromics = []
         self.bps = self.find_breakpoints()
         self._clusters = None
+        self.hybrid_count = self.bps['read'].unique()
 
     @property
     def clusters(self):
@@ -61,6 +64,13 @@ class BreakpointFinder(object):
         paf = pd.concat([human_align, virus_paf])
         paf = paf.sort_values(["q_name", "q_start"])
         paf = paf.set_index("q_name")
+
+        # add zmw information
+        name, zmw, interval = paf.index.str.split('/').str
+        s_start, __ = interval.str.split('_').str
+        paf['zmw'] = pd.to_numeric(zmw, errors='coerce')
+        paf['s_start'] = pd.to_numeric(s_start, errors='coerce')
+
         return paf, virus_paf["chr"].unique().tolist()
 
     def _create_paf_format(self, filin):
@@ -82,29 +92,27 @@ class BreakpointFinder(object):
         msg = "No correct input provided."
         raise TypeError(msg)
 
-    def find_breakpoints(self, threads=1):
+    def find_breakpoints(self):
         """ Find all breakpoints between the reference and the contig of
         virus.
         """
         logger.info("Breakpoint research is running...")
-        with Pool(processes=threads) as pool:
+        with Pool(processes=self.threads) as pool:
             breakpoints = pool.map(
                 self._get_read_breakpoints,
                 self.paf.index.unique()
             )
-#        self.palindromics = []
-#        breakpoints = list()
-#        for read_name in self.paf.index.unique():
-#            try:
-#                breakpoints += self._get_read_breakpoints(read_name)
-#            except TypeError:
-#                pass
-        logger.info("{} breakpoints are found.".format(len(breakpoints)))
-        return breakpoints
+        bp_list = [bp for read_bp in breakpoints if read_bp for bp in read_bp]
+        df = pd.DataFrame(bp_list)
+        logger.info("{} breakpoints are found.".format(len(bp_list)))
+        return df
 
     def _get_read_breakpoints(self, name):
         try:
             read_paf = self.paf.loc[name]
+            zmw = read_paf['zmw'].max()
+            s_start = read_paf['s_start'].max()
+            length = read_paf['q_length'].max()
         except KeyError:
             return None
         # zip function is faster than itertuples method
@@ -132,7 +140,7 @@ class BreakpointFinder(object):
                             self._get_breakpoint(
                                 prev_chr, prev_coord, prev_strand,
                                 prev_mapq, cur_chr, cur_coord,
-                                cur_strand, name
+                                cur_strand, name, zmw, s_start, length
                             )
                         )
                     except TypeError:
@@ -142,35 +150,35 @@ class BreakpointFinder(object):
                     bp_list.append(
                         self._get_breakpoint(
                             cur_chr, cur_coord, cur_strand, cur_mapq, prev_chr,
-                            prev_coord, prev_strand, name
+                            prev_coord, prev_strand, name, zmw, s_start, length
                         )
                     )
                 except TypeError:
                     pass
             (prev_chr, prev_coord, prev_strand, prev_mapq) = (
                 cur_chr, cur_coord, cur_strand, cur_mapq)
-
-        # Check if the read is palindromics
-        if _read_is_palindromic(bp_list):
-            self.palindromics.append(bp_list)
-            return []
         return bp_list
 
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
-                        virus_chr, virus_coord, virus_strand, read_name):
+                        virus_chr, virus_coord, virus_strand, read_name, zmw,
+                        s_start, length):
         """ Create breakpoint dictionnary to create dataframe.
         """
         # check if hg - hpv or hpv - hg case
         i = 0 if human_coord[2] < virus_coord[2] else 1
+        
+        # get breakpoint location
+        location = virus_coord[2 + i]
 
         # get coord if strand is '+'
         too_far = abs(human_coord[3 - i] - virus_coord[2 + i]) > 100
+        bpstart_human = end_human = "Unknown"
         if too_far:
             human_chr = "Unmapped"
-            human_strand = bpstart_human = end_human = "Unknown"
+            human_strand = "?"
         elif human_mapq <= 30:
             human_chr = "LowMapQ"
-            human_strand = bpstart_human = end_human = "Unknown"
+            human_strand = "?"
         else:
             bpstart_human = human_coord[1 - i]
             end_human = human_coord[0 + i]
@@ -182,24 +190,36 @@ class BreakpointFinder(object):
             bpstart_human, end_human = end_human, bpstart_human
         if virus_strand == '-':
             bpstart_virus, end_virus = end_virus, bpstart_virus
-
-        if virus_strand == '-':
             # the virus strand always set as '+'
             virus_strand = '+'
-            if human_strand != 'Unknown':
+            if human_strand != '?':
                 human_strand = '+' if human_strand == '-' else '-'
+
+        # build the junction plan
+        virus_plan = '+>' if bpstart_virus < end_virus else '<+'
+        human_plan = '{}>' if bpstart_human < end_human else '<{}'
+        jct_plan = "{}/{}".format(human_plan.format(human_strand), virus_plan)
 
         return OrderedDict([
             ("chromosome", human_chr),
             ("bpstart_human", bpstart_human),
             ("end_human", end_human),
-            ("strand_human", human_strand),
             ("virus_contig", virus_chr),
             ("bpstart_virus", bpstart_virus),
             ("end_virus", end_virus),
-            ("strand_virus", virus_strand),
+            ("jct_plan", jct_plan),
             ("read", read_name),
+            ("location", location),
+            ("zmw", zmw),
+            ("s_start", s_start),
+            ("length", length),
         ])
+
+    def find_palindromics(self):
+        """ Find reads that are palindromics using clustering.
+        """
+        logger.info("Palindromics research is running...")
+        return NotImplemented
 
     def clustering_breakpoints(self, human_thd=1, virus_thd=1):
         """ Generate a clustering with bpstart_human and with bpstart_virus.
@@ -212,38 +232,65 @@ class BreakpointFinder(object):
         Add 'human_clust' and 'virus_clust' in dataframe.
         """
         # clustering with human breakpoint start and chromosome
+        cluster_df = pd.DataFrame(self.bps['chromosome'])
         cond = self.bps['bpstart_human'] != 'Unknown'
         known_bp = self.bps.loc[cond]
-        clustering = known_bp.sort_values('bpstart_human')\
-                             .groupby('chromosome')['bpstart_human']\
-                             .diff().gt(human_thd).cumsum()
-        self.bps.loc[clustering.index, 'human_clust'] = clustering
+        human_cluster = known_bp.sort_values('bpstart_human')\
+                                .groupby('chromosome')['bpstart_human']\
+                                .diff().gt(human_thd).cumsum()
+        cluster_df.loc[human_cluster.index, 'human_clust'] = human_cluster
         # create cluster with Unmapped and LowMapQ
-        self.bps['human_clust'] = self.bps['human_clust'].fillna(max(clustering) + 1)\
-                                                         .astype(int)
+        cluster_df['human_clust'] = cluster_df['human_clust'].fillna(
+            max(human_cluster) + 1).astype(int)
         # clustering with virus breakpoint start
-        clustering = self.bps.sort_values('bpstart_virus')['bpstart_virus']\
-                             .diff().gt(virus_thd).cumsum()
-        self.bps.loc[clustering.index, 'virus_clust'] = clustering
-        grouped = self.bps.groupby(['chromosome', 'human_clust',
-                                    'virus_clust'])
+        virus_cluster = self.bps.sort_values('bpstart_virus')['bpstart_virus']\
+                            .diff().gt(virus_thd).cumsum()
+        cluster_df.loc[virus_cluster.index, 'virus_clust'] = virus_cluster
+        grouped = cluster_df.groupby(['chromosome', 'human_clust',
+                                      'virus_clust'])
         self._clusters = sorted(grouped.groups.items(),
                                 key=lambda x: len(x[1]),
                                 reverse=True)
+        # add cluster rank to bps
+        map_clust_to_index = {
+            index: i
+            for i, (__, indexes) in enumerate(self._clusters)
+            for index in indexes
+        }
+        self.bps['cluster'] = self.bps.index.map(map_clust_to_index)
 
-    def summarize_human_clustering(self, threshold=20):
+    def get_read_cluster_content(self):
+        """ Return a dataframe with reads contains of clusters.
+        """
+        jct_count = self.bps.groupby('read').location.count()
+        multiple_jct = jct_count.loc[jct_count >= 2].index
+        multi_jct_df = self.bps.loc[self.bps['read'].isin(multiple_jct)]
+        
+        def group_read_info(x):
+            return pd.Series({
+                'count': len(x.cluster),
+                'clust_content': "-".join(str(c) for c in x.cluster),
+                'length': x.length.max(),
+                'zmw': x.zmw.max(),
+            })
+        
+        jct_content = multi_jct_df.sort_values('location')\
+                                  .groupby('read')\
+                                  .apply(group_read_info)
+        return jct_content
+
+    def summarise_clustering(self):
         """ Return a dataframe that summarizes bigger clusters.
 
         :params int threshold: minimum size of cluster.
         """
         cluster_df = [
             self._summarize_sub_df(cluster)
-            for cluster in takewhile(lambda x: len(x[1]) >= threshold,
-                                     self.clusters)
+            for cluster in self.clusters
         ]
         return pd.DataFrame(
             cluster_df,
-            columns=['name', 'chromosome', 'median_bpstart_human',
+            columns=['rank', 'chromosome', 'median_bpstart_human',
                      'max_end_human', 'strand_human', 'median_bpstart_virus',
                      'max_end_virus', 'number_of_read'],
         )
@@ -255,7 +302,7 @@ class BreakpointFinder(object):
         subdf = self.bps.loc[index]
         try:
             return [
-                name,
+                subdf['cluster'].max(),
                 subdf['chromosome'].max(),
                 subdf['bpstart_human'].median(),
                 _get_max_end(subdf, 'human'),
@@ -266,7 +313,7 @@ class BreakpointFinder(object):
             ]
         except TypeError:
             return [
-                name,
+                subdf['cluster'].max(),
                 subdf['chromosome'].max(),
                 "Unknown",
                 "Unknown",
@@ -342,7 +389,6 @@ class BreakpointFinder(object):
         plt.bar(bp_position.index, bp_position, color=COLOR)
         return generate_plot(filename, fig)
 
-
     def plot_number_bp(self, filename=None):
         """ Plot the number of reads that hold multiple breakpoint.
 
@@ -360,7 +406,6 @@ class BreakpointFinder(object):
         )
         plt.bar(bp_count.index, bp_count, color=COLOR)
         return generate_plot(filename, fig)
-
 
     def plot_connections_locations(self, rank, filename=None):
         """ Plot where connections are located.

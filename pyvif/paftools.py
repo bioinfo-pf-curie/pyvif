@@ -125,14 +125,7 @@ class PAF(object):
         Return image filename or show the plot in ipython.
         """
         from matplotlib import cm
-        plt.figure(figsize=(10, 7.5))
-        ax = plt.subplot(111)
-
-        # increase font size
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
-        plt.xlabel("Read lengths", fontsize=16)
-        plt.ylabel("Percentage aligned", fontsize=16)
+        fig, ax = init_plot("", "Read lengths", "Percentage aligned")
 
         paf = self.df.copy()
         paf['a_length'] = paf['r_end'] - paf['r_start']
@@ -141,7 +134,7 @@ class PAF(object):
             paf = paf.loc[paf['chr'].isin(targets)]
 
         plt.hist2d(paf['q_length'], paf['%_aligned'], bins=bins,
-                   cmap=cm.afmhot_r)
+                   cmap=cm.viridis)
         plt.colorbar()
         return generate_plot(filename, fig)
 
