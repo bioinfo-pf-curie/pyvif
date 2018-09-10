@@ -111,8 +111,12 @@ def _basic_metrics_table(human_df, qc_df, control_df=None):
         'Total': total,
         "On target": len(virus_df['q_name'].unique()), 
         "On virus": len(virus_df['q_name'].unique()),
-        "Only virus": len(virus_df.loc[~virus_df['q_name'].isin(human_df['q_name'])]['q_name'].unique()),
-        "Breakpoint virus": len(human_df.loc[human_df['q_name'].isin(virus_df['q_name'])]['q_name'].unique()),
+        "Only virus": len(
+            virus_df.loc[~virus_df['q_name'].isin(human_df['q_name'])]['q_name'].unique()
+        ),
+        "Breakpoint virus": len(
+            human_df.loc[human_df['q_name'].isin(virus_df['q_name'])]['q_name'].unique()
+        ),
     }
     # add control count
     try:
