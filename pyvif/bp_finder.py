@@ -130,58 +130,6 @@ class BreakpointFinder(object):
         logger.info("{} breakpoints are found.".format(len(bp_list)))
         return df
 
-    def _get_read_breakpoints(self, name):
-        try:
-            read_paf = self.paf.loc[name]
-            zmw = read_paf['zmw'].max()
-            s_start = read_paf['s_start'].max()
-            length = read_paf['q_length'].max()
-        except KeyError:
-            return None
-        # zip function is faster than itertuples method
-        # try if read_paf is a dataframe and not a Series
-        # If it is a Serie -> read have only one alignment
-        try:
-            iter_align = zip(
-                read_paf["chr"], read_paf["r_start"], read_paf["r_end"],
-                read_paf["q_start"], read_paf["q_end"], read_paf["strand"],
-                read_paf["mapq"]
-            )
-        except TypeError:
-            return None
-
-        # init previous variables
-        prev_chr = prev_coord = prev_strand = prev_mapq = None
-        bp_list = list()
-
-        # find breakpoint in read
-        for cur_chr, *cur_coord, cur_strand, cur_mapq in iter_align:
-            if cur_chr in self.virus_contigs:
-                if prev_chr != cur_chr:
-                    try:
-                        bp_list.append(
-                            self._get_breakpoint(
-                                prev_chr, prev_coord, prev_strand,
-                                prev_mapq, cur_chr, cur_coord,
-                                cur_strand, name, zmw, s_start, length
-                            )
-                        )
-                    except TypeError:
-                        pass
-            elif prev_chr in self.virus_contigs:
-                try:
-                    bp_list.append(
-                        self._get_breakpoint(
-                            cur_chr, cur_coord, cur_strand, cur_mapq, prev_chr,
-                            prev_coord, prev_strand, name, zmw, s_start, length
-                        )
-                    )
-                except TypeError:
-                    pass
-            (prev_chr, prev_coord, prev_strand, prev_mapq) = (
-                cur_chr, cur_coord, cur_strand, cur_mapq)
-        return bp_list
-
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
                         virus_chr, virus_coord, virus_strand, read_name):
         """ Create breakpoint dictionnary to create dataframe.
@@ -248,10 +196,10 @@ class BreakpointFinder(object):
         :params int virus_thd: maximal distance between two virus breakpoint
                                start.
 
-        Add 'human_clust' and 'virus_clust' in dataframe.
+        Add 'cluster' column in dataframe.
         """
         # clustering with human breakpoint start and chromosome
-        cluster_df = pd.DataFrame(self.bps['chromosome'])
+        cluster_df = self.bps[['chromosome', 'jct_plan']].copy()
         cond = self.bps['bpstart_human'] != 'Unknown'
         known_bp = self.bps.loc[cond]
         human_cluster = known_bp.sort_values('bpstart_human')\
@@ -266,7 +214,7 @@ class BreakpointFinder(object):
                             .diff().gt(virus_thd).cumsum()
         cluster_df.loc[virus_cluster.index, 'virus_clust'] = virus_cluster
         grouped = cluster_df.groupby(['chromosome', 'human_clust',
-                                      'virus_clust'])
+                                      'virus_clust', 'jct_plan'])
         self._clusters = sorted(grouped.groups.items(),
                                 key=lambda x: len(x[1]),
                                 reverse=True)
@@ -359,17 +307,18 @@ class BreakpointFinder(object):
 
         return dataframe with connected breakpoint.
         """
-        bp_count = self.bps['read'].value_counts()
-        # get reads name with multiple breakpoints
-        multi = bp_count.loc[bp_count > 1].index
-        # get reads of the cluster
-        cluster = self.clusters[rank]
-        cluster_bp = self.bps.loc[cluster[1]].set_index('read')
-        # get intersection reads
-        intersection = cluster_bp.index.intersection(multi)
-        inter_read = self.bps.loc[self.bps['read'].isin(intersection)]
-        # remove the cluster of interest to get connections
-        connections = inter_read.loc[inter_read['human_clust'] != cluster[0][1]]
+        # get read name of rank
+        try:
+            cluster_bp = self.bps['cluster'] == rank
+        except KeyError:
+            self.clustering_breakpoints()
+            cluster_bp = self.bps['cluster'] == rank
+        self.clustering_breakpoints()
+        cluster_read = self.bps.loc[cluster_bp]['read'].unique()
+        connections = self.bps.loc[
+            (~cluster_bp)
+            & (self.bps['read'].isin(cluster_read))
+        ]
         return connections
 
     def get_alignment_in_cluster(self, rank):
