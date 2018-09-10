@@ -5,10 +5,7 @@
 I detect breakpoint with the minimap2 mapping and breakpoints sequences.
 """
 
-import time
-from collections import OrderedDict, defaultdict
-from itertools import takewhile
-from multiprocessing import Pool, TimeoutError
+from collections import OrderedDict
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,7 +22,7 @@ class BreakpointFinder(object):
     """ Object that detect all breakpoint present in PacBio data.
     It uses a mapping on human and viruses genomes.
     """
-    def __init__(self, human, virus, threads=1):
+    def __init__(self, human, virus):
         """.. rubric:: constructor
 
         :param human: PAF* format of mapping on human genome or BAM file.
@@ -36,7 +33,6 @@ class BreakpointFinder(object):
         file created by :meth:`pbcapture.bamtools.PAF.to_csv`.
         """
         self.paf, self.virus_contigs = self._init_paf(human, virus)
-        self.threads = threads
         self.palindromics = []
         self.bps = self.find_breakpoints()
         self._clusters = None
@@ -97,12 +93,39 @@ class BreakpointFinder(object):
         virus.
         """
         logger.info("Breakpoint research is running...")
-        with Pool(processes=self.threads) as pool:
-            breakpoints = pool.map(
-                self._get_read_breakpoints,
-                self.paf.index.unique()
-            )
-        bp_list = [bp for read_bp in breakpoints if read_bp for bp in read_bp]
+        # zip function is faster than itertuples method
+        iter_align = zip(
+            self.paf.index, self.paf["chr"], self.paf["r_start"],
+            self.paf["r_end"], self.paf["q_start"], self.paf["q_end"],
+            self.paf["strand"], self.paf["mapq"]
+        )
+        # init variable as None
+        prev_read = prev_chr = prev_coord = prev_strand = prev_mapq = None
+        bp_list = list()
+
+        for cur_read, cur_chr, *cur_coord, cur_strand, cur_mapq in iter_align:
+            # reboot analysis if read change
+            if cur_read != prev_read:
+                (prev_read, prev_chr, prev_coord, prev_strand, prev_mapq) = (
+                    cur_read, cur_chr, cur_coord, cur_strand, cur_mapq)
+                continue
+            elif cur_chr in self.virus_contigs:
+                if prev_chr != cur_chr:
+                    bp_list.append(
+                        self._get_breakpoint(
+                            prev_chr, prev_coord, prev_strand, prev_mapq,
+                            cur_chr, cur_coord, cur_strand, cur_read
+                        )
+                    )
+            elif prev_chr in self.virus_contigs:
+                bp_list.append(
+                    self._get_breakpoint(
+                        cur_chr, cur_coord, cur_strand, cur_mapq, prev_chr,
+                        prev_coord, prev_strand, cur_read
+                    )
+                )
+            (prev_read, prev_chr, prev_coord, prev_strand, prev_mapq) = (
+                cur_read, cur_chr, cur_coord, cur_strand, cur_mapq)
         df = pd.DataFrame(bp_list)
         logger.info("{} breakpoints are found.".format(len(bp_list)))
         return df
@@ -160,13 +183,12 @@ class BreakpointFinder(object):
         return bp_list
 
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
-                        virus_chr, virus_coord, virus_strand, read_name, zmw,
-                        s_start, length):
+                        virus_chr, virus_coord, virus_strand, read_name):
         """ Create breakpoint dictionnary to create dataframe.
         """
         # check if hg - hpv or hpv - hg case
         i = 0 if human_coord[2] < virus_coord[2] else 1
-        
+
         # get breakpoint location
         location = virus_coord[2 + i]
 
@@ -210,9 +232,6 @@ class BreakpointFinder(object):
             ("jct_plan", jct_plan),
             ("read", read_name),
             ("location", location),
-            ("zmw", zmw),
-            ("s_start", s_start),
-            ("length", length),
         ])
 
     def find_palindromics(self):
@@ -265,7 +284,7 @@ class BreakpointFinder(object):
         jct_count = self.bps.groupby('read').location.count()
         multiple_jct = jct_count.loc[jct_count >= 2].index
         multi_jct_df = self.bps.loc[self.bps['read'].isin(multiple_jct)]
-        
+
         def group_read_info(x):
             return pd.Series({
                 'count': len(x.cluster),
@@ -273,7 +292,7 @@ class BreakpointFinder(object):
                 'length': x.length.max(),
                 'zmw': x.zmw.max(),
             })
-        
+
         jct_content = multi_jct_df.sort_values('location')\
                                   .groupby('read')\
                                   .apply(group_read_info)
@@ -291,7 +310,7 @@ class BreakpointFinder(object):
         return pd.DataFrame(
             cluster_df,
             columns=['rank', 'chromosome', 'median_bpstart_human',
-                     'max_end_human', 'strand_human', 'median_bpstart_virus',
+                     'max_end_human', 'jct_plan', 'median_bpstart_virus',
                      'max_end_virus', 'number_of_read'],
         )
 
@@ -306,7 +325,7 @@ class BreakpointFinder(object):
                 subdf['chromosome'].max(),
                 subdf['bpstart_human'].median(),
                 _get_max_end(subdf, 'human'),
-                subdf['strand_human'].max(),
+                subdf['jct_plan'].max(),
                 subdf['bpstart_virus'].median(),
                 _get_max_end(subdf, 'virus'),
                 len(index)
@@ -317,7 +336,7 @@ class BreakpointFinder(object):
                 subdf['chromosome'].max(),
                 "Unknown",
                 "Unknown",
-                "Unknown",
+                subdf['jct_plan'].max(),
                 subdf['bpstart_virus'].median(),
                 _get_max_end(subdf, 'virus'),
                 len(index)
@@ -366,7 +385,7 @@ class BreakpointFinder(object):
 
     def plot_positions(self, filename=None):
         """ Barplot of reads position in reference.
-        
+
         :param str filename: filename to save images.
 
         Return image filename.
