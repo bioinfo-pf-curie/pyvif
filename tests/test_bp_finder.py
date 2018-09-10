@@ -17,10 +17,10 @@ def test_bp_finder():
 
 def test_bp_clustering(test_bp_finder):
     test_bp_finder.clustering_breakpoints()
-    assert len(test_bp_finder.bps.columns) == 11
-    summarize = test_bp_finder.summarize_human_clustering()
-    assert len(summarize) == 2
-    assert summarize.loc[0,"number_of_read"] == 1042
+    assert len(test_bp_finder.bps.columns) == 10
+    summarise = test_bp_finder.summarise_clustering()
+    assert len(summarise) == 13
+    assert summarise.loc[0,"number_of_read"] == 1042
     assert len(test_bp_finder.get_bp_in_cluster(0)) == 1042
     assert len(test_bp_finder.get_bp_connections(0)) == 15
     assert len(test_bp_finder.get_alignment_in_cluster(0)) == 2323

@@ -68,7 +68,7 @@ def main(human, virus, output, control):
     human_df = bam_to_paf(human)
     bp_finder = BreakpointFinder(human_df, virus_df)
     bp_finder.clustering_breakpoints()
-    summarize = bp_finder.summarize_human_clustering()
+    summarise = bp_finder.summarise_clustering()
 
     pyvif_qc = {
         'name': os.path.basename(human).rstrip('.bam'),
@@ -82,7 +82,7 @@ def main(human, virus, output, control):
     pyvif_bp = {
         'palindromic_count': len(bp_finder.palindromics),
         'bp_count': embed_png(bp_finder.plot_number_bp, 'filename'),
-        'cluster_table': summarize.drop('name', axis=1).to_html(
+        'cluster_table': summarise.to_html(
             table_id='bp_clustering',
             index=False,
             float_format=lambda x: "{:.0f}".format(x),
