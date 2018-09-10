@@ -12,18 +12,19 @@ def test_bp_finder():
         virus=test_dir + "/resources/virus.bam"
     )
     assert len(bp_found.bps) == 1079
-    assert len(bp_found.bps.columns) == 9
+    assert len(bp_found.bps.columns) == 11
     return bp_found
 
 def test_bp_clustering(test_bp_finder):
     test_bp_finder.clustering_breakpoints()
-    assert len(test_bp_finder.bps.columns) == 10
+    assert len(test_bp_finder.bps.columns) == 12
     summarise = test_bp_finder.summarise_clustering()
     assert len(summarise) == 13
     assert summarise.loc[0,"number_of_read"] == 1042
     assert len(test_bp_finder.get_bp_in_cluster(0)) == 1042
     assert len(test_bp_finder.get_bp_connections(0)) == 15
     assert len(test_bp_finder.get_alignment_in_cluster(0)) == 2323
+    read_content = test_bp_finder.get_read_cluster_content()
 
 def test_plot_number_bp(test_bp_finder, tmpdir):
     test_bp_finder.plot_number_bp(tmpdir.join("plot_number_bp.png"))
