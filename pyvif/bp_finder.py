@@ -384,6 +384,9 @@ class BreakpointFinder(object):
         return generate_plot(filename, fig)
 
     def plot_density_virus_human(self, filename=None):
+        """ Plot the virus part vs the human part of reads.
+        The plot shows 99% of data to zoom in.
+        """
         from matplotlib import cm
         fig, ax = init_plot("", "Human Size (base)", "Virus Size (base)")
 

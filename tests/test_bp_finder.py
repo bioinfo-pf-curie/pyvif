@@ -30,3 +30,6 @@ def test_plot_number_bp(test_bp_finder, tmpdir):
 
 def test_plot_connections_locations(test_bp_finder, tmpdir):
     test_bp_finder.plot_connections_locations(0, tmpdir.join("plot_connections.png"))
+
+def test_plot_density_virus_human(test_bp_finder, tmpdir):
+    test_bp_finder.plot_density_virus_human(tmpdir.join("plot_density.png"))
