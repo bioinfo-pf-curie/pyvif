@@ -7,11 +7,11 @@ pacbio.
 ## Contribution & Support
 
 Contributions and suggestions for new features are welcome, as are bug reports !
-Please create a new [issue](https://gitlab.curie.fr/ddesvill/pyvif/issues) for any of these.
+Please create a new [issue](https://github.com/bioinfo-pf-curie/pyvif/issues) for any of these.
 
 If in doubt, feel free to get in touch with the authors directly:
 
-[@ddesvill](https://gitlab.curie.fr/ddesvill) (dimitri.desvillechabrol@curie.fr)
+[@ddesvillechabrol](https://github.com/ddesvillechabrol)
 
 Main authors: 
-- [@ddesvill](https://gitlab.curie.fr/ddesvill)
+- [@ddesvillechabrol](https://github.com/ddesvillechabrol)
