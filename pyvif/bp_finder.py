@@ -61,12 +61,6 @@ class BreakpointFinder(object):
         paf = paf.sort_values(["q_name", "q_start"])
         paf = paf.set_index("q_name")
 
-        # add zmw information
-        name, zmw, interval = paf.index.str.split('/').str
-        s_start, __ = interval.str.split('_').str
-        paf['zmw'] = pd.to_numeric(zmw, errors='coerce')
-        paf['s_start'] = pd.to_numeric(s_start, errors='coerce')
-
         return paf, virus_paf["chr"].unique().tolist()
 
     def _create_paf_format(self, filin):
@@ -98,35 +92,34 @@ class BreakpointFinder(object):
             self.paf.index, self.paf["chr"], self.paf["r_start"],
             self.paf["r_end"], self.paf["q_start"], self.paf["q_end"],
             self.paf["strand"], self.paf["mapq"], self.paf["q_length"],
-            self.paf["zmw"]
         )
         # init variable as None
         prev_chr = prev_coord = prev_strand = prev_mapq = None
-        zmw = read = length = None
+        read = length = None
         bp_list = list()
 
-        for (cur_read, cur_chr, *cur_coord, cur_strand, cur_mapq, cur_length,
-             cur_zmw) in iter_align:
+        for (cur_read, cur_chr, *cur_coord, cur_strand, cur_mapq,
+             cur_length) in iter_align:
             # reboot analysis if read change
             if cur_read != read:
                 (prev_chr, prev_coord, prev_strand, prev_mapq) = (
                     cur_chr, cur_coord, cur_strand, cur_mapq)
                 # new read
-                read, length, zmw = cur_read, cur_length, cur_zmw
+                read, length = cur_read, cur_length
                 continue
             elif cur_chr in self.virus_contigs:
                 if prev_chr != cur_chr:
                     bp_list.append(
                         self._get_breakpoint(
                             prev_chr, prev_coord, prev_strand, prev_mapq,
-                            cur_chr, cur_coord, cur_strand, read, length, zmw
+                            cur_chr, cur_coord, cur_strand, read, length
                         )
                     )
             elif prev_chr in self.virus_contigs:
                 bp_list.append(
                     self._get_breakpoint(
                         cur_chr, cur_coord, cur_strand, cur_mapq, prev_chr,
-                        prev_coord, prev_strand, read, length, zmw
+                        prev_coord, prev_strand, read, length
                     )
                 )
             (prev_chr, prev_coord, prev_strand, prev_mapq) = (
@@ -136,8 +129,7 @@ class BreakpointFinder(object):
         return df
 
     def _get_breakpoint(self, human_chr, human_coord, human_strand, human_mapq,
-                        virus_chr, virus_coord, virus_strand, read, length,
-                        zmw):
+                        virus_chr, virus_coord, virus_strand, read, length):
         """ Create breakpoint dictionnary to create dataframe.
         """
         # check if hg - hpv or hpv - hg case
@@ -186,7 +178,6 @@ class BreakpointFinder(object):
             ("jct_plan", jct_plan),
             ("read", read),
             ("length", length),
-            ("zmw", zmw),
             ("location", location),
         ])
 
@@ -254,7 +245,6 @@ class BreakpointFinder(object):
                 'count': len(x.cluster),
                 'clust_content': "-".join(str(c) for c in x.cluster),
                 'length': x.length.max(),
-                'zmw': x.zmw.max(),
             })
 
         jct_content = multi_jct_df.sort_values('location')\

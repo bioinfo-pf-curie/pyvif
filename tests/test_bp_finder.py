@@ -12,12 +12,12 @@ def test_bp_finder():
         virus=test_dir + "/resources/virus.bam"
     )
     assert len(bp_found.bps) == 1079
-    assert len(bp_found.bps.columns) == 11
+    assert len(bp_found.bps.columns) == 10
     return bp_found
 
 def test_bp_clustering(test_bp_finder):
     test_bp_finder.clustering_breakpoints()
-    assert len(test_bp_finder.bps.columns) == 12
+    assert len(test_bp_finder.bps.columns) == 11
     summarise = test_bp_finder.summarise_clustering()
     assert len(summarise) == 13
     assert summarise.loc[0,"number_of_read"] == 1042
