@@ -148,7 +148,12 @@ class PAF(object):
         """
 
         paf = self.df.copy()
-        name, zmw, interval = paf['q_name'].str.split('/').str
+        try:
+            name, zmw, interval = paf['q_name'].str.split('/').str
+        except ValueError:
+            logger.warning("You did not use subreads."
+                           " This plot is unavailable.")
+            return None
         paf['zmw'] = pd.to_numeric(zmw, errors='coerce')
         # count number of pass for each zmw
         zmw_count = paf.groupby('q_name').zmw.max().value_counts()
