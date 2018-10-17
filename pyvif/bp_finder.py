@@ -207,8 +207,12 @@ class BreakpointFinder(object):
         """
         # clustering with human breakpoint start and chromosome
         cluster_df = self.bps[['chromosome', 'jct_plan']].copy()
-        cond = self.bps['bpstart_human'] != 'Unknown'
-        known_bp = self.bps.loc[cond]
+        # crash if no unknown
+        try:
+            cond = self.bps['bpstart_human'] != 'Unknown'
+            known_bp = self.bps.loc[cond]
+        except TypeError:
+            known_bp = self.bps
         human_cluster = known_bp.sort_values('bpstart_human')\
                                 .groupby('chromosome')['bpstart_human']\
                                 .diff().gt(human_thd).cumsum()
